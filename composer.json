@@ -1,0 +1,56 @@
+{
+    "name": "uuf6429/phpstan-phpdoc-type-resolver",
+    "description": "Resolve (fully-qualify) types from PHPStan's PHPDoc parser",
+    "license": "MIT",
+    "type": "library",
+    "authors": [
+        {
+            "name": "Christian Sciberras",
+            "email": "christian@sciberras.me"
+        }
+    ],
+    "require": {
+        "php": "^8.0",
+        "phpstan/phpdoc-parser": "^1.29",
+        "symfony/polyfill-php80": "^1.29"
+    },
+    "require-dev": {
+        "ergebnis/composer-normalize": "^2.42",
+        "friendsofphp/php-cs-fixer": "^3.53",
+        "phpstan/phpstan": "^1.11",
+        "phpunit/phpunit": "^9 || ^10",
+        "roave/security-advisories": "dev-latest"
+    },
+    "autoload": {
+        "psr-4": {
+            "uuf6429\\PHPStanPHPDocTypeResolver\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "uuf6429\\PHPStanPHPDocTypeResolverTests\\": "tests/"
+        },
+        "files": [
+            "tests/Fixtures/functions.php"
+        ]
+    },
+    "config": {
+        "allow-plugins": {
+            "ergebnis/composer-normalize": true
+        },
+        "process-timeout": 0
+    },
+    "scripts": {
+        "lint": [
+            "composer normalize --dry-run",
+            "composer exec phpstan -- analyse --no-progress",
+            "composer exec php-cs-fixer -- fix --dry-run --show-progress=none --diff"
+        ],
+        "lint:fix": [
+            "composer normalize",
+            "composer exec php-cs-fixer -- fix --diff"
+        ],
+        "test": "phpunit ./tests/",
+        "test:cover": "@php -dzend_extension=php_xdebug -dxdebug.mode=coverage vendor/bin/phpunit --coverage-clover coverage.xml ./tests/"
+    }
+}

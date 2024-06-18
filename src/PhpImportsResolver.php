@@ -4,29 +4,31 @@ namespace uuf6429\PHPStanPHPDocTypeResolver;
 
 class PhpImportsResolver
 {
-    /** @var array<string, array{namespace: string, imports: array<string, string>}> */
+    /** @var array<string, PhpImportsFile> */
     private array $cache = [];
 
     /**
      * @return array<string, string>
      */
-    public function getImports(string $file): array
+    public function getImports(TypeScope $scope): array
     {
-        return ($this->cache[$file] ??= $this->loadFile($file))['imports'];
+        return $this->getFile($scope->file)->getImportsAt($scope->line);
     }
 
-    public function getNamespace(string $file): string
+    public function getNamespace(TypeScope $scope): string
     {
-        return ($this->cache[$file] ??= $this->loadFile($file))['namespace'];
+        return $this->getFile($scope->file)->getNamespaceAt($scope->line);
     }
 
-    /**
-     * @return array{namespace: string, imports: array<string, string>}
-     */
-    private function loadFile(string $file): array
+    private function getFile(?string $file): PhpImportsFile
     {
-        if (!is_file($file) || ($content = file_get_contents($file)) === false) {
-            return ['namespace' => '', 'imports' => []];
+        return $this->cache[$file] ??= $this->loadFile($file);
+    }
+
+    private function loadFile(?string $file): PhpImportsFile
+    {
+        if (!$file || !is_file($file) || ($content = file_get_contents($file)) === false) {
+            return new PhpImportsFile([]);
         }
 
         return (new PhpImportsParser($content))->parse();

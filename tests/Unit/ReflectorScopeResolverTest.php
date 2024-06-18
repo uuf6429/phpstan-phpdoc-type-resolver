@@ -19,6 +19,7 @@ use uuf6429\PHPStanPHPDocTypeResolver\TypeScope;
 use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\AttributeTestFixture;
 use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\ObjectTestFixture;
 use uuf6429\PHPStanPHPDocTypeResolverTests\ReflectsValuesTrait;
+
 use function uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\getFunctionWithParameter;
 
 class ReflectorScopeResolverTest extends TestCase

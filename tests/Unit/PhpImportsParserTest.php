@@ -2,6 +2,7 @@
 
 namespace uuf6429\PHPStanPHPDocTypeResolverTests\Unit;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpImportsParser;
 
@@ -9,8 +10,8 @@ class PhpImportsParserTest extends TestCase
 {
     /**
      * @param array{namespace: string, imports: array<string, string>} $expectedResult
-     * @dataProvider parsingDataProvider
      */
+    #[DataProvider('parsingDataProvider')]
     public function testParsing(string $sourceCode, array $expectedResult): void
     {
         $parser = new PhpImportsParser("<?php\n\n$sourceCode");

@@ -9,15 +9,11 @@ use RuntimeException;
 final class PhpImportsParser
 {
     /**
-     * @readonly
      * @var array<PhpToken>
      */
-    private array $tokens;
+    private readonly array $tokens;
 
-    /**
-     * @readonly
-     */
-    private int $numTokens;
+    private readonly int $numTokens;
 
     private int $pointer = 0;
 

@@ -4,7 +4,6 @@ namespace uuf6429\PHPStanPHPDocTypeResolver;
 
 use LogicException;
 use PhpToken;
-use RuntimeException;
 
 final class PhpImportsParser
 {
@@ -19,39 +18,55 @@ final class PhpImportsParser
 
     public function __construct(string $content)
     {
-        $content = preg_split('/\n\s*(class|interface|trait|function)\s/', $content, 2)[0] ?? '';
-
         $this->tokens = PhpToken::tokenize($content);
         $this->numTokens = count($this->tokens);
     }
 
-    /**
-     * @return array{namespace: string, imports: array<string, string>}
-     */
-    public function parse(): array
+    public function parse(): PhpImportsFile
     {
+        $blocks = [];
+
         $namespace = null;
         $imports = [];
-
+        $lastLine = 0;
+        $lastToken = null;
         while ($token = $this->next()) {
             switch (true) {
                 case $token->is(T_USE):
+                    $namespace ??= '';
                     foreach ($this->parseUseStatement() as $k => $v) {
                         $imports[$k] = $v;
                     }
                     break;
 
                 case $token->is(T_NAMESPACE):
-                    $newNamespace = $this->parseNamespace();
-                    if ($namespace !== null && $namespace !== $newNamespace) {
-                        throw new RuntimeException('Multiple different namespaces per file is not supported');
+                    if ($namespace !== null) {
+                        $blocks[] = new PhpImportsBlock(
+                            startLine: $lastLine,
+                            endLine: $token->line,
+                            namespace: $namespace,
+                            imports: $imports,
+                        );
+                        $lastLine = $token->line + 1;
                     }
-                    $namespace = $newNamespace;
+
+                    $namespace = $this->parseNamespace();
                     break;
             }
+
+            $lastToken = $token;
         }
 
-        return ['namespace' => $namespace ?? '', 'imports' => $imports];
+        if ($lastToken && ($namespace !== null || !empty($imports))) {
+            $blocks[] = new PhpImportsBlock(
+                startLine: $lastLine,
+                endLine: $lastToken->line,
+                namespace: $namespace ?? '',
+                imports: $imports,
+            );
+        }
+
+        return new PhpImportsFile($blocks);
     }
 
     private function next(): ?PhpToken

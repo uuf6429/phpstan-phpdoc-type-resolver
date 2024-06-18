@@ -7,6 +7,7 @@
 
 namespace uuf6429\PHPStanPHPDocTypeResolverTests\Unit;
 
+use LogicException;
 use PHPStan\PhpDocParser\Ast\ConstExpr\ConstExprIntegerNode;
 use PHPStan\PhpDocParser\Ast\ConstExpr\ConstExprStringNode;
 use PHPStan\PhpDocParser\Ast\Type;
@@ -16,6 +17,7 @@ use Reflector;
 use SplFileInfo;
 use uuf6429\PHPStanPHPDocTypeResolver\ReflectorScopeResolver;
 use uuf6429\PHPStanPHPDocTypeResolver\TypeResolver;
+use uuf6429\PHPStanPHPDocTypeResolver\TypeScope;
 use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\Cases\Case1;
 use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\Cases\Case2;
 use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\Cases\JumpingCaseInterface;
@@ -36,9 +38,9 @@ class TypeResolverTest extends TestCase
     {
         $scopeResolver = new ReflectorScopeResolver();
         $scope = $scopeResolver->resolve($reflector);
-        $docBlock = $this->parseDocBlock($scope['comment']);
+        $docBlock = $this->parseDocBlock($scope->comment);
 
-        $typeResolver = new TypeResolver($scope['file'], $scope['class']);
+        $typeResolver = new TypeResolver($scope);
         $actualReturnType = $typeResolver->resolve($docBlock->getReturnTagValues()[0]->type);
 
         $this->assertEquals($expectedReturnType, $actualReturnType);
@@ -177,5 +179,26 @@ class TypeResolverTest extends TestCase
                 false,
             ),
         ];
+    }
+
+    public function testThatRelativeTypeWithoutClassScopeIsNotAllowed(): void
+    {
+        $scope = new TypeScope(
+            file:null,
+            line: null,
+            class: null,
+            comment: <<<'PHPDOC'
+                /**
+                 * @return $this
+                 */
+                PHPDOC,
+        );
+        $docBlock = $this->parseDocBlock($scope->comment);
+        $typeResolver = new TypeResolver($scope);
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('Cannot resolve `$this`, no class was defined in the current scope');
+
+        $typeResolver->resolve($docBlock->getReturnTagValues()[0]->type);
     }
 }

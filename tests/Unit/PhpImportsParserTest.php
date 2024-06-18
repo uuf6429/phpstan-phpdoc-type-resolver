@@ -18,7 +18,13 @@ class PhpImportsParserTest extends TestCase
 
         $actualResult = $parser->parse();
 
-        $this->assertSame($expectedResult, $actualResult);
+        $this->assertSame(
+            $expectedResult,
+            [
+                'namespace' => $actualResult->getNamespaceAt(0),
+                'imports' => $actualResult->getImportsAt(0),
+            ],
+        );
     }
 
     /**

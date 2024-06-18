@@ -40,3 +40,19 @@ function getTypeResolverTestClosureReturningImportedType(): Closure
         return new SplFileInfo(__FILE__);
     };
 }
+
+/**
+ * @param 'hello'|'bye' $greeting
+ */
+function functionWithParameter(string $greeting): void
+{
+    echo $greeting;
+}
+
+/**
+ * @return callable-string
+ */
+function getFunctionWithParameter(): string
+{
+    return __NAMESPACE__ . '\\functionWithParameter';
+}

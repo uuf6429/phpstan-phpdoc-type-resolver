@@ -2,6 +2,7 @@
 
 namespace uuf6429\PHPStanPHPDocTypeResolver;
 
+use LogicException;
 use PHPStan\PhpDocParser\Ast\ConstExpr;
 use PHPStan\PhpDocParser\Ast\PhpDoc\TemplateTagValueNode;
 use PHPStan\PhpDocParser\Ast\Type;
@@ -12,13 +13,8 @@ class TypeResolver
     private const BASIC_TYPES = ['int', 'float', 'bool', 'string', 'array', 'object', 'resource', 'callable', 'void', 'never', 'list', 'null', 'false', 'true'];
     private const RELATIVE_TYPES = ['self', 'static', '$this'];
 
-    /**
-     * @param null|string $scopeFile The file containing the source where the types have occurred.
-     * @param null|class-string $scopeClass The fully-qualified class where the types are being resolved for.
-     */
     public function __construct(
-        private readonly ?string $scopeFile,
-        private readonly ?string $scopeClass,
+        private readonly TypeScope $scope,
         private readonly PhpImportsResolver $importsResolver = new PhpImportsResolver(),
     ) {}
 
@@ -107,7 +103,7 @@ class TypeResolver
                 switch (true) {
                     case $constExpr instanceof ConstExpr\ConstExprArrayItemNode:
                         return new Type\ConstTypeNode(
-                            constExpr:new ConstExpr\ConstExprArrayItemNode(
+                            constExpr: new ConstExpr\ConstExprArrayItemNode(
                                 key: $this->resolveType($constExpr->key),
                                 value: $this->resolveType($constExpr->value),
                             ),
@@ -135,7 +131,7 @@ class TypeResolver
 
                     case $constExpr instanceof ConstExpr\ConstFetchNode:
                         return new Type\ConstTypeNode(
-                            constExpr:new ConstExpr\ConstFetchNode(
+                            constExpr: new ConstExpr\ConstFetchNode(
                                 className: $this->resolveIdentifier($constExpr->className),
                                 name: $constExpr->name,
                             ),
@@ -180,7 +176,7 @@ class TypeResolver
 
             case $orig instanceof Type\ObjectShapeNode:
                 return new Type\ObjectShapeNode(
-                    items:array_map(
+                    items: array_map(
                         fn(Type\ObjectShapeItemNode $item): Type\ObjectShapeItemNode => $this->resolveType($item),
                         $orig->items,
                     ),
@@ -194,12 +190,13 @@ class TypeResolver
 
             case $orig instanceof Type\ThisTypeNode:
                 return new Type\IdentifierTypeNode(
-                    name:$this->getScopeClass(),
+                    name: $this->resolveRelativeTypes('$this')
+                        ?? throw new LogicException('The `$this` type should always be resolved'),
                 );
 
             case $orig instanceof Type\UnionTypeNode:
                 return new Type\UnionTypeNode(
-                    types:array_map(
+                    types: array_map(
                         fn(Type\TypeNode $item): Type\TypeNode => $this->resolveType($item),
                         $orig->types,
                     ),
@@ -242,7 +239,11 @@ class TypeResolver
             return null;
         }
 
-        return $this->getScopeClass();
+        if ($this->scope->class === null) {
+            throw new LogicException("Cannot resolve `$symbol`, no class was defined in the current scope");
+        }
+
+        return $this->scope->class;
     }
 
     private function resolveBasicType(string $symbol): ?string
@@ -254,10 +255,6 @@ class TypeResolver
 
     private function resolveImportedType(string $symbol): ?string
     {
-        if ($this->scopeFile === null) {
-            return null;
-        }
-
         $alias = $symbol;
 
         [$top, $rest] = explode('\\', $symbol, 2) + ['', ''];
@@ -266,7 +263,7 @@ class TypeResolver
             $alias = strtolower($top);
         }
 
-        $aliases = $this->importsResolver->getImports($this->scopeFile);
+        $aliases = $this->importsResolver->getImports($this->scope);
 
         if (!isset($aliases[$alias])) {
             return null;
@@ -281,20 +278,8 @@ class TypeResolver
 
     private function resolveNamespacedType(string $symbol): ?string
     {
-        $namespace = $this->importsResolver->getNamespace($this->scopeFile ?? '');
+        $namespace = $this->importsResolver->getNamespace($this->scope);
 
         return $namespace ? "$namespace\\$symbol" : null;
-    }
-
-    /**
-     * @return class-string
-     */
-    private function getScopeClass(): string
-    {
-        if ($this->scopeClass === null) {
-            throw new RuntimeException('Current scope is not within any class');
-        }
-
-        return $this->scopeClass;
     }
 }

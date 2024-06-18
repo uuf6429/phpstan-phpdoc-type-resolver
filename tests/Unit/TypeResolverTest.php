@@ -10,6 +10,7 @@ namespace uuf6429\PHPStanPHPDocTypeResolverTests\Unit;
 use PHPStan\PhpDocParser\Ast\ConstExpr\ConstExprIntegerNode;
 use PHPStan\PhpDocParser\Ast\ConstExpr\ConstExprStringNode;
 use PHPStan\PhpDocParser\Ast\Type;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Reflector;
 use SplFileInfo;
@@ -30,9 +31,7 @@ class TypeResolverTest extends TestCase
     use ReflectsValuesTrait;
     use ParsesDocBlocksTrait;
 
-    /**
-     * @dataProvider returnTypeDataProvider
-     */
+    #[DataProvider('returnTypeDataProvider')]
     public function testReturnType(Reflector $reflector, ?Type\TypeNode $expectedReturnType): void
     {
         $scopeResolver = new ReflectorScopeResolver();
@@ -46,7 +45,6 @@ class TypeResolverTest extends TestCase
     }
 
     /**
-     * @todo Remove redundant tests
      * @return iterable<string, array{reflector: Reflector, expectedReturnType: ?Type\TypeNode}>
      */
     public static function returnTypeDataProvider(): iterable

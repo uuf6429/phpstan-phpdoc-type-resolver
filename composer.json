@@ -10,15 +10,14 @@
         }
     ],
     "require": {
-        "php": "^8.0",
-        "phpstan/phpdoc-parser": "^1.29",
-        "symfony/polyfill-php80": "^1.29"
+        "php": "^8.1",
+        "phpstan/phpdoc-parser": "^1.29"
     },
     "require-dev": {
         "ergebnis/composer-normalize": "^2.42",
         "friendsofphp/php-cs-fixer": "^3.53",
         "phpstan/phpstan": "^1.11",
-        "phpunit/phpunit": "^9 || ^10",
+        "phpunit/phpunit": "^10",
         "roave/security-advisories": "dev-latest"
     },
     "autoload": {

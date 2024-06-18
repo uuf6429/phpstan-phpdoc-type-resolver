@@ -13,31 +13,14 @@ class TypeResolver
     private const RELATIVE_TYPES = ['self', 'static', '$this'];
 
     /**
-     * @readonly
-     */
-    private ?string $scopeFile;
-
-    /**
-     * @readonly
-     * @var null|class-string
-     */
-    private ?string $scopeClass;
-
-    /**
-     * @readonly
-     */
-    private PhpImportsResolver $importsResolver;
-
-    /**
      * @param null|string $scopeFile The file containing the source where the types have occurred.
      * @param null|class-string $scopeClass The fully-qualified class where the types are being resolved for.
      */
-    public function __construct(?string $scopeFile, ?string $scopeClass, ?PhpImportsResolver $importsResolver = null)
-    {
-        $this->scopeFile = $scopeFile;
-        $this->scopeClass = $scopeClass;
-        $this->importsResolver = $importsResolver ?? new PhpImportsResolver();
-    }
+    public function __construct(
+        private readonly ?string $scopeFile,
+        private readonly ?string $scopeClass,
+        private readonly PhpImportsResolver $importsResolver = new PhpImportsResolver(),
+    ) {}
 
     public function resolve(Type\TypeNode $type): Type\TypeNode
     {

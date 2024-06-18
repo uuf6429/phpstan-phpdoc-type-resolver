@@ -48,47 +48,56 @@ class TypeResolver
 
             case $orig instanceof Type\ArrayShapeItemNode:
                 return new Type\ArrayShapeItemNode(
-                    $orig->keyName,
-                    $orig->optional,
-                    $this->resolveType($orig->valueType),
+                    keyName: $orig->keyName,
+                    optional: $orig->optional,
+                    valueType: $this->resolveType($orig->valueType),
                 );
 
             case $orig instanceof Type\ArrayShapeNode:
                 return new Type\ArrayShapeNode(
-                    array_map(fn(Type\ArrayShapeItemNode $item): Type\ArrayShapeItemNode => $this->resolveType($item), $orig->items),
-                    $orig->sealed,
-                    $orig->kind,
+                    items: array_map(
+                        fn(Type\ArrayShapeItemNode $item): Type\ArrayShapeItemNode => $this->resolveType($item),
+                        $orig->items,
+                    ),
+                    sealed: $orig->sealed,
+                    kind: $orig->kind,
                 );
 
             case $orig instanceof Type\ArrayTypeNode:
                 return new Type\ArrayTypeNode(
-                    $this->resolveType($orig->type),
+                    type: $this->resolveType($orig->type),
                 );
 
             case $orig instanceof Type\CallableTypeNode:
                 return new Type\CallableTypeNode(
-                    $this->resolveType($orig->identifier),
-                    array_map(fn(Type\CallableTypeParameterNode $item): Type\CallableTypeParameterNode => $this->resolveType($item), $orig->parameters),
-                    $this->resolveType($orig->returnType),
-                    array_map(fn(TemplateTagValueNode $item): TemplateTagValueNode => $this->resolveType($item), $orig->templateTypes),
+                    identifier: $this->resolveType($orig->identifier),
+                    parameters: array_map(
+                        fn(Type\CallableTypeParameterNode $item): Type\CallableTypeParameterNode => $this->resolveType($item),
+                        $orig->parameters,
+                    ),
+                    returnType: $this->resolveType($orig->returnType),
+                    templateTypes: array_map(
+                        fn(TemplateTagValueNode $item): TemplateTagValueNode => $this->resolveType($item),
+                        $orig->templateTypes,
+                    ),
                 );
 
             case $orig instanceof Type\ConditionalTypeForParameterNode:
                 return new Type\ConditionalTypeForParameterNode(
-                    $orig->parameterName,
-                    $this->resolveType($orig->targetType),
-                    $this->resolveType($orig->if),
-                    $this->resolveType($orig->else),
-                    $orig->negated,
+                    parameterName: $orig->parameterName,
+                    targetType: $this->resolveType($orig->targetType),
+                    if: $this->resolveType($orig->if),
+                    else: $this->resolveType($orig->else),
+                    negated: $orig->negated,
                 );
 
             case $orig instanceof Type\ConditionalTypeNode:
                 return new Type\ConditionalTypeNode(
-                    $this->resolveType($orig->subjectType),
-                    $this->resolveType($orig->targetType),
-                    $this->resolveType($orig->if),
-                    $this->resolveType($orig->else),
-                    $orig->negated,
+                    subjectType: $this->resolveType($orig->subjectType),
+                    targetType: $this->resolveType($orig->targetType),
+                    if: $this->resolveType($orig->if),
+                    else: $this->resolveType($orig->else),
+                    negated: $orig->negated,
                 );
 
             case $orig instanceof Type\ConstTypeNode && $constExpr !== null:
@@ -98,16 +107,19 @@ class TypeResolver
                 switch (true) {
                     case $constExpr instanceof ConstExpr\ConstExprArrayItemNode:
                         return new Type\ConstTypeNode(
-                            new ConstExpr\ConstExprArrayItemNode(
-                                $this->resolveType($constExpr->key),
-                                $this->resolveType($constExpr->value),
+                            constExpr:new ConstExpr\ConstExprArrayItemNode(
+                                key: $this->resolveType($constExpr->key),
+                                value: $this->resolveType($constExpr->value),
                             ),
                         );
 
                     case $constExpr instanceof ConstExpr\ConstExprArrayNode:
                         return new Type\ConstTypeNode(
-                            new ConstExpr\ConstExprArrayNode(
-                                array_map(fn(ConstExpr\ConstExprArrayItemNode $item): ConstExpr\ConstExprArrayItemNode => $this->resolveType($item), $constExpr->items),
+                            constExpr: new ConstExpr\ConstExprArrayNode(
+                                items: array_map(
+                                    fn(ConstExpr\ConstExprArrayItemNode $item): ConstExpr\ConstExprArrayItemNode => $this->resolveType($item),
+                                    $constExpr->items,
+                                ),
                             ),
                         );
 
@@ -123,9 +135,9 @@ class TypeResolver
 
                     case $constExpr instanceof ConstExpr\ConstFetchNode:
                         return new Type\ConstTypeNode(
-                            new ConstExpr\ConstFetchNode(
-                                $this->resolveIdentifier($constExpr->className),
-                                $constExpr->name,
+                            constExpr:new ConstExpr\ConstFetchNode(
+                                className: $this->resolveIdentifier($constExpr->className),
+                                name: $constExpr->name,
                             ),
                         );
                 }
@@ -133,69 +145,81 @@ class TypeResolver
 
             case $orig instanceof Type\GenericTypeNode:
                 return new Type\GenericTypeNode(
-                    $this->resolveType($orig->type),
-                    array_map(fn(Type\TypeNode $item): Type\TypeNode => $this->resolveType($item), $orig->genericTypes),
-                    $orig->variances,
+                    type: $this->resolveType($orig->type),
+                    genericTypes: array_map(
+                        fn(Type\TypeNode $item): Type\TypeNode => $this->resolveType($item),
+                        $orig->genericTypes,
+                    ),
+                    variances: $orig->variances,
                 );
 
             case $orig instanceof Type\IdentifierTypeNode:
                 return new Type\IdentifierTypeNode(
-                    $this->resolveIdentifier($orig->name),
+                    name:$this->resolveIdentifier($orig->name),
                 );
 
             case $orig instanceof Type\IntersectionTypeNode:
                 return new Type\IntersectionTypeNode(
-                    array_map(fn(Type\TypeNode $item): Type\TypeNode => $this->resolveType($item), $orig->types),
+                    types: array_map(
+                        fn(Type\TypeNode $item): Type\TypeNode => $this->resolveType($item),
+                        $orig->types,
+                    ),
                 );
 
             case $orig instanceof Type\NullableTypeNode:
                 return new Type\NullableTypeNode(
-                    $this->resolveType($orig->type),
+                    type:$this->resolveType($orig->type),
                 );
 
             case $orig instanceof Type\ObjectShapeItemNode:
                 return new Type\ObjectShapeItemNode(
-                    $orig->keyName,
-                    $orig->optional,
-                    $this->resolveType($orig->valueType),
+                    keyName: $orig->keyName,
+                    optional: $orig->optional,
+                    valueType: $this->resolveType($orig->valueType),
                 );
 
             case $orig instanceof Type\ObjectShapeNode:
                 return new Type\ObjectShapeNode(
-                    array_map(fn(Type\ObjectShapeItemNode $item): Type\ObjectShapeItemNode => $this->resolveType($item), $orig->items),
+                    items:array_map(
+                        fn(Type\ObjectShapeItemNode $item): Type\ObjectShapeItemNode => $this->resolveType($item),
+                        $orig->items,
+                    ),
                 );
 
             case $orig instanceof Type\OffsetAccessTypeNode:
                 return new Type\OffsetAccessTypeNode(
-                    $this->resolveType($orig->offset),
-                    $this->resolveType($orig->type),
+                    type: $this->resolveType($orig->offset),
+                    offset: $this->resolveType($orig->type),
                 );
 
             case $orig instanceof Type\ThisTypeNode:
                 return new Type\IdentifierTypeNode(
-                    $this->getScopeClass(),
+                    name:$this->getScopeClass(),
                 );
 
             case $orig instanceof Type\UnionTypeNode:
                 return new Type\UnionTypeNode(
-                    array_map(fn(Type\TypeNode $item): Type\TypeNode => $this->resolveType($item), $orig->types),
+                    types:array_map(
+                        fn(Type\TypeNode $item): Type\TypeNode => $this->resolveType($item),
+                        $orig->types,
+                    ),
                 );
 
             case $orig instanceof Type\CallableTypeParameterNode:
                 return new Type\CallableTypeParameterNode(
-                    $this->resolveType($orig->type),
-                    $orig->isReference,
-                    $orig->isVariadic,
-                    $orig->parameterName,
-                    $orig->isOptional,
+                    type: $this->resolveType($orig->type),
+                    isReference: $orig->isReference,
+                    isVariadic: $orig->isVariadic,
+                    parameterName: $orig->parameterName,
+                    isOptional: $orig->isOptional,
                 );
 
             case $orig instanceof TemplateTagValueNode:
                 return new TemplateTagValueNode(
-                    $orig->name,
-                    $this->resolveType($orig->bound),
-                    $orig->description ?: '',
-                    $this->resolveType($orig->default),
+                    name: $orig->name,
+                    bound: $this->resolveType($orig->bound),
+                    description: $orig->description ?: '',
+                    default: $this->resolveType($orig->default),
                 );
 
             default:

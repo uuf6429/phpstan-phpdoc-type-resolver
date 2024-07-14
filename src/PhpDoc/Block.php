@@ -93,6 +93,16 @@ class Block
         return $this->resolveTypesInTag($tags[0]?->value ?? null);
     }
 
+    public function hasTag(string $name): bool
+    {
+        foreach ($this->docNode->children as $child) {
+            if ($child instanceof PhpDocTagNode && $child->name === $name) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /**
      * @return ($tag is null ? null : PhpDocTagValueNode)
      */

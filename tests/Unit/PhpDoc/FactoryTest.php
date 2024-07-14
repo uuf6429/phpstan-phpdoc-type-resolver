@@ -110,4 +110,19 @@ class FactoryTest extends TestCase
             $block->getDescription(),
         );
     }
+
+    public function testThatTagExistenceCheckWorks(): void
+    {
+        $factory = Factory::createInstance();
+        $comment = <<<'PHP'
+            /**
+             * @param A
+             * @deprecated
+             */
+            PHP;
+        $block = $factory->createFromComment($comment);
+
+        $this->assertTrue($block->hasTag('@deprecated'));
+        $this->assertFalse($block->hasTag('@readonly'));
+    }
 }

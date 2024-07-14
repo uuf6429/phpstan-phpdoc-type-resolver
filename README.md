@@ -19,6 +19,10 @@ composer require uuf6429/phpstan-phpdoc-type-resolver
 
 _Consider using `--dev` if you intend to use this library during development only._
 
+## 🤔 Why?
+
+Because `phpstan/phpdoc-parser` doesn't resolve types (it's not its responsibility) and `phpdocument/type-resolver` [kinda sucks](https://github.com/phpDocumentor/ReflectionDocBlock/issues/372).
+
 ## 🚀 Usage
 
 In principle the resolver needs two things:

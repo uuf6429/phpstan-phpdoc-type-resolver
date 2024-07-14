@@ -21,7 +21,7 @@ _Consider using `--dev` if you intend to use this library during development onl
 
 ## 🤔 Why?
 
-Because `phpstan/phpdoc-parser` doesn't resolve types (it's not its responsibility) and `phpdocument/type-resolver` [kinda sucks](https://github.com/phpDocumentor/ReflectionDocBlock/issues/372).
+Because `phpstan/phpdoc-parser` doesn't resolve types (it's not its responsibility) and `phpdocument/type-resolver` [is very limited](https://github.com/phpDocumentor/ReflectionDocBlock/issues/372).
 
 ## 🚀 Usage
 

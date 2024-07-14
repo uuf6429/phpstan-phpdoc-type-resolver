@@ -1,15 +1,17 @@
 <?php
 
-namespace uuf6429\PHPStanPHPDocTypeResolver;
+namespace uuf6429\PHPStanPHPDocTypeResolver\PhpImports;
 
-class PhpImportsFile
+class File
 {
     /**
-     * @param list<PhpImportsBlock> $blocks
+     * @param list<Block> $blocks
      */
     public function __construct(
         private readonly array $blocks,
-    ) {}
+    ) {
+        //
+    }
 
     public function getNamespaceAt(?int $line): string
     {
@@ -24,7 +26,7 @@ class PhpImportsFile
         return $this->getBlockAt($line)->imports ?? [];
     }
 
-    private function getBlockAt(?int $line): ?PhpImportsBlock
+    private function getBlockAt(?int $line): ?Block
     {
         if($line === null) {
             return null;

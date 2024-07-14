@@ -7,6 +7,7 @@ use PHPStan\PhpDocParser\Ast\ConstExpr;
 use PHPStan\PhpDocParser\Ast\PhpDoc\TemplateTagValueNode;
 use PHPStan\PhpDocParser\Ast\Type;
 use RuntimeException;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpImports\Resolver;
 
 class TypeResolver
 {
@@ -15,7 +16,7 @@ class TypeResolver
 
     public function __construct(
         private readonly TypeScope $scope,
-        private readonly PhpImportsResolver $importsResolver = new PhpImportsResolver(),
+        private readonly Resolver  $importsResolver = new Resolver(),
     ) {}
 
     public function resolve(Type\TypeNode $type): Type\TypeNode
@@ -32,9 +33,6 @@ class TypeResolver
     {
         $constExpr = $orig instanceof Type\ConstTypeNode ? $orig->constExpr : null;
 
-        /**
-         * @noinspection PhpSwitchCanBeReplacedWithMatchExpressionInspection PHPUnit is not able to handle coverage for match expressions correctly.
-         */
         switch (true) {
             case $orig === null:
                 return null;
@@ -97,9 +95,6 @@ class TypeResolver
                 );
 
             case $orig instanceof Type\ConstTypeNode && $constExpr !== null:
-                /**
-                 * @noinspection PhpSwitchCanBeReplacedWithMatchExpressionInspection PHPUnit is not able to handle coverage for match expressions correctly.
-                 */
                 switch (true) {
                     case $constExpr instanceof ConstExpr\ConstExprArrayItemNode:
                         return new Type\ConstTypeNode(
@@ -125,8 +120,6 @@ class TypeResolver
                     case $constExpr instanceof ConstExpr\ConstExprNullNode:
                     case $constExpr instanceof ConstExpr\ConstExprStringNode:
                     case $constExpr instanceof ConstExpr\ConstExprTrueNode:
-                    case $constExpr instanceof ConstExpr\DoctrineConstExprStringNode:
-                    case $constExpr instanceof ConstExpr\QuoteAwareConstExprStringNode:
                         return $orig;
 
                     case $constExpr instanceof ConstExpr\ConstFetchNode:

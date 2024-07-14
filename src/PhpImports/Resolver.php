@@ -1,10 +1,12 @@
 <?php
 
-namespace uuf6429\PHPStanPHPDocTypeResolver;
+namespace uuf6429\PHPStanPHPDocTypeResolver\PhpImports;
 
-class PhpImportsResolver
+use uuf6429\PHPStanPHPDocTypeResolver\TypeScope;
+
+class Resolver
 {
-    /** @var array<string, PhpImportsFile> */
+    /** @var array<string, File> */
     private array $cache = [];
 
     /**
@@ -20,17 +22,17 @@ class PhpImportsResolver
         return $this->getFile($scope->file)->getNamespaceAt($scope->line);
     }
 
-    private function getFile(?string $file): PhpImportsFile
+    private function getFile(?string $file): File
     {
         return $this->cache[$file] ??= $this->loadFile($file);
     }
 
-    private function loadFile(?string $file): PhpImportsFile
+    private function loadFile(?string $file): File
     {
         if (!$file || !is_file($file) || ($content = file_get_contents($file)) === false) {
-            return new PhpImportsFile([]);
+            return new File([]);
         }
 
-        return (new PhpImportsParser($content))->parse();
+        return (new Parser($content))->parse();
     }
 }

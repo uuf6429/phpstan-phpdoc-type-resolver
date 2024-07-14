@@ -1,11 +1,11 @@
 <?php
 
-namespace uuf6429\PHPStanPHPDocTypeResolver;
+namespace uuf6429\PHPStanPHPDocTypeResolver\PhpImports;
 
 use LogicException;
 use PhpToken;
 
-final class PhpImportsParser
+final class Parser
 {
     /**
      * @var array<PhpToken>
@@ -22,7 +22,7 @@ final class PhpImportsParser
         $this->numTokens = count($this->tokens);
     }
 
-    public function parse(): PhpImportsFile
+    public function parse(): File
     {
         $blocks = [];
 
@@ -41,7 +41,7 @@ final class PhpImportsParser
 
                 case $token->is(T_NAMESPACE):
                     if ($namespace !== null) {
-                        $blocks[] = new PhpImportsBlock(
+                        $blocks[] = new Block(
                             startLine: $lastLine,
                             endLine: $token->line,
                             namespace: $namespace,
@@ -58,7 +58,7 @@ final class PhpImportsParser
         }
 
         if ($lastToken && ($namespace !== null || !empty($imports))) {
-            $blocks[] = new PhpImportsBlock(
+            $blocks[] = new Block(
                 startLine: $lastLine,
                 endLine: $lastToken->line,
                 namespace: $namespace ?? '',
@@ -66,7 +66,7 @@ final class PhpImportsParser
             );
         }
 
-        return new PhpImportsFile($blocks);
+        return new File($blocks);
     }
 
     private function next(): ?PhpToken

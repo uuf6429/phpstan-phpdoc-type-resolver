@@ -47,7 +47,7 @@
         ],
         "lint:fix": [
             "composer normalize",
-            "composer exec php-cs-fixer -- fix --diff"
+            "composer exec php-cs-fixer -- fix --show-progress=dots --diff"
         ],
         "test": "phpunit ./tests/",
         "test:cover": "@php -dzend_extension=php_xdebug -dxdebug.mode=coverage vendor/bin/phpunit --coverage-clover coverage.xml ./tests/"

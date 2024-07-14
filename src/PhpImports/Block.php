@@ -1,8 +1,8 @@
 <?php
 
-namespace uuf6429\PHPStanPHPDocTypeResolver;
+namespace uuf6429\PHPStanPHPDocTypeResolver\PhpImports;
 
-class PhpImportsBlock
+class Block
 {
     /**
      * @param array<string, string> $imports

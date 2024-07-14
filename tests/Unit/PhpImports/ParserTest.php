@@ -1,12 +1,12 @@
 <?php
 
-namespace uuf6429\PHPStanPHPDocTypeResolverTests\Unit;
+namespace uuf6429\PHPStanPHPDocTypeResolverTests\Unit\PhpImports;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use uuf6429\PHPStanPHPDocTypeResolver\PhpImportsParser;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpImports\Parser;
 
-class PhpImportsParserTest extends TestCase
+class ParserTest extends TestCase
 {
     /**
      * @param array{namespace: string, imports: array<string, string>} $expectedResult
@@ -14,7 +14,7 @@ class PhpImportsParserTest extends TestCase
     #[DataProvider('parsingDataProvider')]
     public function testParsing(string $sourceCode, array $expectedResult): void
     {
-        $parser = new PhpImportsParser("<?php\n\n$sourceCode");
+        $parser = new Parser("<?php\n\n$sourceCode");
 
         $actualResult = $parser->parse();
 

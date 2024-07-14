@@ -21,7 +21,8 @@ _Consider using `--dev` if you intend to use this library during development onl
 
 ## 🤔 Why?
 
-Because `phpstan/phpdoc-parser` doesn't resolve types (it's not its responsibility) and `phpdocument/type-resolver` [is very limited](https://github.com/phpDocumentor/ReflectionDocBlock/issues/372).
+Because `phpstan/phpdoc-parser` doesn't resolve types (it's not its responsibility) and `phpdocument/type-resolver`
+[currently has some major limitations](https://github.com/phpDocumentor/ReflectionDocBlock/issues/372).
 
 ## 🚀 Usage
 
@@ -33,9 +34,33 @@ There are two ways to retrieve that information, as shown below.
 
 ### 😎 Via Reflection
 
-Let's assume we have a `\My\Project\Greeter` class with a `greet` method, here's how we can resolve that method's return type:
+Let's assume we have a `\My\Project\Greeter` class with a `greet` method, here's how we can resolve that method's
+return type:
 
 ```php
+<?php
+
+// Reflect our class method
+$reflector = new \ReflectionMethod(\My\Project\Greeter::class, 'greet');
+
+// Use the provided factory to easily parse the PHPDoc, which additionally automatically resolves the types
+$docBlock = \uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Factory::createInstance()
+    ->createFromReflector($reflector);
+
+// And finally, retrieve the resolved type of the return tag
+/** @var \PHPStan\PhpDocParser\Ast\PhpDoc\ReturnTagValueNode $returnTag */
+$returnTag = $docBlock->getTag('@return');
+$finalReturnType = $returnTag->type;
+```
+
+### 🙈 Without Factory/DocBlock Wrapper
+
+Assuming as before that we have a `\My\Project\Greeter` class with a `greet` method, here's the longer way to resolve
+the method's return type:
+
+```php
+<?php
+
 // Reflect our class method
 $reflector = new \ReflectionMethod(\My\Project\Greeter::class, 'greet');
 
@@ -50,7 +75,7 @@ $typeParser = new \PHPStan\PhpDocParser\Parser\TypeParser($constExprParser);
 $parser = new \PHPStan\PhpDocParser\Parser\PhpDocParser($typeParser, $constExprParser);
 $docBlock = $parser->parse(
     new \PHPStan\PhpDocParser\Parser\TokenIterator(
-        $lexer->tokenize($scope->comment)     // <- note that the scope resolver also retrieves the PHPDoc block for us
+        $lexer->tokenize($scope->comment)   // 👈 note that the scope resolver also retrieves the PHPDoc block for us
     )
 );
 
@@ -67,6 +92,8 @@ reflection). However, this will take more work - the main difference is that you
 Let's assume we want to resolve a type in a PHP source code string:
 
 ```php
+<?php
+
 $source = <<<'PHP'
 <?php
 
@@ -99,5 +126,12 @@ $scope = new \uuf6429\PHPStanPHPDocTypeResolver\TypeScope(
         PHPDOC
 );
 
-// The rest of the code is the same as "Via Reflection" starting at the "$lexer = ..." line.
+// The factory can also be used with a custom scope
+$docBlock = \uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Factory::createInstance()
+    ->createFromScope($scope);
+
+// And as before, retrieve the resolved type of the return tag
+/** @var \PHPStan\PhpDocParser\Ast\PhpDoc\ReturnTagValueNode $returnTag */
+$returnTag = $docBlock->getTag('@return');
+$finalReturnType = $returnTag->type;
 ```

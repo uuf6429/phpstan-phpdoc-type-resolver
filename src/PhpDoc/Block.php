@@ -5,6 +5,7 @@ namespace uuf6429\PHPStanPHPDocTypeResolver\PhpDoc;
 use PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocNode;
 use PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocTagNode;
 use PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocTagValueNode;
+use PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocTextNode;
 use PHPStan\PhpDocParser\Ast\Type\TypeNode;
 use uuf6429\PHPStanPHPDocTypeResolver\TypeResolver;
 
@@ -17,16 +18,54 @@ class Block
         //
     }
 
+    public function getSummary(): string
+    {
+        foreach ($this->docNode->children as $child) {
+            if (!$child instanceof PhpDocTextNode) {
+                break;
+            }
+
+            if (trim($child->text) !== '') {
+                return $child->text;
+            }
+        }
+
+        return '';
+    }
+
+    public function getDescription(): string
+    {
+        $summaryFound = false;
+        $descriptionLines = [];
+
+        foreach ($this->docNode->children as $child) {
+            if (!$child instanceof PhpDocTextNode) {
+                break;
+            }
+
+            if (!$summaryFound) {
+                $summaryFound = trim($child->text) !== '';
+                continue;
+            }
+
+            $descriptionLines[] = $child->text;
+        }
+
+        return trim(implode("\n", $descriptionLines));
+    }
+
     /**
      * @return list<PhpDocTagValueNode>
      */
     public function getTags(?string $name = null): array
     {
-        return array_map(
-            fn(PhpDocTagNode $tag): PhpDocTagValueNode => $this->resolveTypesInTag($tag->value),
-            $name
+        return array_values(
+            array_map(
+                fn(PhpDocTagNode $tag): PhpDocTagValueNode => $this->resolveTypesInTag($tag->value),
+                $name
                 ? $this->docNode->getTagsByName($name)
                 : $this->docNode->getTags(),
+            ),
         );
     }
 

@@ -25,9 +25,14 @@ class ObjectTestFixture
     }
 
     /**
+     * Greeter
+     *
+     * A function that greets the entity given their name with the desired greeting.
+     * For example, one could greet the world with `(new ObjectTestFixture('Hello'))->greet('World')`.
+     *
      * @param string|Stringable $name
      */
-    public function greetPerson(string|Stringable $name): void
+    public function greet(string|Stringable $name): void
     {
         echo "$this->realProperty $name";
     }

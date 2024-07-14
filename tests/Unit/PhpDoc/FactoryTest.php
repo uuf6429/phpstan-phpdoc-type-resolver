@@ -21,7 +21,7 @@ class FactoryTest extends TestCase
     public function testThatDocBlockCanBeCreatedFromReflector(): void
     {
         $factory = Factory::createInstance();
-        $reflector = self::reflectMethod([ObjectTestFixture::class, 'greetPerson']);
+        $reflector = self::reflectMethod([ObjectTestFixture::class, 'greet']);
 
         $block = $factory->createFromReflector($reflector);
         $tags = $block->getTags('@param');
@@ -68,7 +68,7 @@ class FactoryTest extends TestCase
     public function testThatRequiredMissingTagTriggersException(): void
     {
         $factory = Factory::createInstance();
-        $reflector = self::reflectMethod([ObjectTestFixture::class, 'greetPerson']);
+        $reflector = self::reflectMethod([ObjectTestFixture::class, 'greet']);
         $block = $factory->createFromReflector($reflector);
 
         $this->expectException(TagNotFoundException::class);
@@ -92,5 +92,22 @@ class FactoryTest extends TestCase
         $this->expectExceptionMessage('More than one `@param` tags have been defined');
 
         $block->getTag('@param');
+    }
+
+    public function testThatSummaryAndDescriptionWorks(): void
+    {
+        $factory = Factory::createInstance();
+        $reflector = self::reflectMethod([ObjectTestFixture::class, 'greet']);
+
+        $block = $factory->createFromReflector($reflector);
+
+        $this->assertEquals('Greeter', $block->getSummary());
+        $this->assertEquals(
+            <<<'TEST'
+            A function that greets the entity given their name with the desired greeting.
+            For example, one could greet the world with `(new ObjectTestFixture('Hello'))->greet('World')`.
+            TEST,
+            $block->getDescription(),
+        );
     }
 }

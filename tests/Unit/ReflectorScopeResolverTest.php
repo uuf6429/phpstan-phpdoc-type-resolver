@@ -137,16 +137,21 @@ class ReflectorScopeResolverTest extends TestCase
         yield 'ReflectionMethod' => [
             'expectedResult' => new TypeScope(
                 file: 'basename://ObjectTestFixture.php',
-                line: 30,
+                line: 35,
                 class: ObjectTestFixture::class,
                 comment:  <<<'PHPDOC'
                     /**
+                         * Greeter
+                         *
+                         * A function that greets the entity given their name with the desired greeting.
+                         * For example, one could greet the world with `(new ObjectTestFixture('Hello'))->greet('World')`.
+                         *
                          * @param string|Stringable $name
                          */
                     PHPDOC,
             ),
             'expectedException' => null,
-            'reflector' => self::reflectMethod([ObjectTestFixture::class, 'greetPerson']),
+            'reflector' => self::reflectMethod([ObjectTestFixture::class, 'greet']),
         ];
 
         yield 'ReflectionFunction' => [

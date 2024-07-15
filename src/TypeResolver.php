@@ -11,7 +11,26 @@ use uuf6429\PHPStanPHPDocTypeResolver\PhpImports\Resolver;
 
 class TypeResolver
 {
-    private const BASIC_TYPES = ['int', 'float', 'bool', 'string', 'array', 'object', 'resource', 'callable', 'void', 'never', 'list', 'null', 'false', 'true'];
+    private const BASIC_TYPES = [
+        'int',
+        'integer',
+        'float',
+        'decimal',
+        'bool',
+        'boolean',
+        'string',
+        'array',
+        'object',
+        'resource',
+        'callable',
+        'void',
+        'never',
+        'list',
+        'null',
+        'false',
+        'true',
+    ];
+
     private const RELATIVE_TYPES = ['self', 'static', '$this'];
 
     public function __construct(

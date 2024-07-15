@@ -64,10 +64,10 @@ class TypeResolverTest extends TestCase
         ];
 
         yield 'return boolean or integer' => [
-            'reflector' => self::reflectMethod([TypeResolverTestFixture::class, 'returnBoolOrInt']),
+            'reflector' => self::reflectMethod([TypeResolverTestFixture::class, 'returnBoolOrInteger']),
             'expectedReturnType' => new Type\UnionTypeNode([
                 new Type\IdentifierTypeNode('bool'),
-                new Type\IdentifierTypeNode('int'),
+                new Type\IdentifierTypeNode('integer'),
             ]),
         ];
 

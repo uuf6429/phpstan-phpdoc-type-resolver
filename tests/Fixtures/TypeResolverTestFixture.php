@@ -20,9 +20,9 @@ abstract class TypeResolverTestFixture
     abstract public function returnNullableString(): ?string;
 
     /**
-     * @return bool|int
+     * @return bool|integer
      */
-    abstract public function returnBoolOrInt(): bool|int;
+    abstract public function returnBoolOrInteger(): bool|int;
 
     /**
      * @return Cases\Case1

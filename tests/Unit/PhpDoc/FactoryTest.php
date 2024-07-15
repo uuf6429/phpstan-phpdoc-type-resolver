@@ -125,4 +125,14 @@ class FactoryTest extends TestCase
         $this->assertTrue($block->hasTag('@deprecated'));
         $this->assertFalse($block->hasTag('@readonly'));
     }
+
+    public function testThatEmptyDocBlockIsHandled(): void
+    {
+        $factory = Factory::createInstance();
+
+        $block = $factory->createFromComment('');
+
+        $this->assertSame('', $block->getSummary());
+        $this->assertCount(0, $block->getTags());
+    }
 }

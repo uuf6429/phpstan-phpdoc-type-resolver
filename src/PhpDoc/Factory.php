@@ -50,7 +50,13 @@ class Factory
     public function createFromScope(TypeScope $scope): Block
     {
         return new Block(
-            $this->parser->parse(new PhpDocParser\Parser\TokenIterator($this->lexer->tokenize($scope->comment))),
+            $this->parser->parse(
+                new PhpDocParser\Parser\TokenIterator(
+                    $this->lexer->tokenize(
+                        trim($scope->comment) ? $scope->comment : "/**\n */",
+                    ),
+                ),
+            ),
             new TypeResolver($scope, $this->phpImportsResolver),
         );
     }

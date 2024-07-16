@@ -5,9 +5,13 @@ namespace uuf6429\PHPStanPHPDocTypeResolver\PhpDoc;
 class Scope
 {
     /**
-     * Represents the scope where the type occurred:
-     * The file/line(approximate) needed for handling namespacing correctly (especially files with multiple namespaces)
-     * The class (must fully-qualified!) is for resolving $this, self etc.
+     * PHPDoc Scope Representation
+     *
+     * Represents the scope where a PHPDoc comment occurred, together with some relevant information:
+     * - File & (approximate)line - for handling namespacing correctly (especially files with multiple namespaces).
+     * - Class - (must fully-qualified!) is for resolving $this, self etc.
+     * - Comment - the PHPDoc comment block.
+     *
      * @param null|class-string $class
      */
     public function __construct(

@@ -132,19 +132,23 @@ class TypeResolverTest extends TestCase
             'reflector' => self::reflectMethod([TypeResolverTestFixture::class, 'returnArrayOfGroupedCases']),
             'expectedReturnType' => new Type\ArrayShapeNode([
                 new Type\ArrayShapeItemNode(
-                    new ConstExprIntegerNode('1'),
-                    false,
-                    new Type\GenericTypeNode(
-                        new Type\IdentifierTypeNode('list'),
-                        [new Type\IdentifierTypeNode(Case1::class)],
-                        ['invariant'],
+                    keyName: new ConstExprIntegerNode('1'),
+                    optional: false,
+                    valueType: new Type\GenericTypeNode(
+                        type: new Type\IdentifierTypeNode('list'),
+                        genericTypes: [
+                            new Type\IdentifierTypeNode(Case1::class),
+                        ],
+                        variances: [
+                            'invariant',
+                        ],
                     ),
                 ),
                 new Type\ArrayShapeItemNode(
-                    new ConstExprIntegerNode('2'),
-                    true,
-                    new Type\ArrayTypeNode(
-                        new Type\IdentifierTypeNode(Case2::class),
+                    keyName: new ConstExprIntegerNode('2'),
+                    optional: true,
+                    valueType: new Type\ArrayTypeNode(
+                        type: new Type\IdentifierTypeNode(Case2::class),
                     ),
                 ),
             ]),
@@ -154,12 +158,12 @@ class TypeResolverTest extends TestCase
             'reflector' => self::reflectMethod([TypeResolverTestFixture::class, 'returnCasesJumpingWrappedInObject']),
             'expectedReturnType' => new Type\ObjectShapeNode([
                 new Type\ObjectShapeItemNode(
-                    new ConstExprStringNode('jumpingCases'),
-                    false,
-                    new Type\UnionTypeNode([
+                    keyName: new ConstExprStringNode('jumpingCases'),
+                    optional: false,
+                    valueType: new Type\UnionTypeNode([
                         new Type\IdentifierTypeNode('null'),
                         new Type\ArrayTypeNode(
-                            new Type\IntersectionTypeNode([
+                            type: new Type\IntersectionTypeNode([
                                 new Type\IdentifierTypeNode(Case1::class),
                                 new Type\IdentifierTypeNode(JumpingCaseInterface::class),
                             ]),
@@ -172,11 +176,26 @@ class TypeResolverTest extends TestCase
         yield 'return callable or string conditionally' => [
             'reflector' => self::reflectMethod([TypeResolverTestFixture::class, 'returnCallableOrTextConditionally']),
             'expectedReturnType' => new Type\ConditionalTypeForParameterNode(
-                '$cond',
-                new Type\IdentifierTypeNode('true'),
-                new Type\IdentifierTypeNode('callable'),
-                new Type\ConstTypeNode(new ConstExprStringNode('text')),
-                false,
+                parameterName: '$cond',
+                targetType: new Type\IdentifierTypeNode('true'),
+                if: new Type\IdentifierTypeNode('callable'),
+                else: new Type\ConstTypeNode(new ConstExprStringNode('text')),
+                negated: false,
+            ),
+        ];
+
+        yield 'return int range' => [
+            'reflector' => self::reflectMethod([TypeResolverTestFixture::class, 'returnRandomInt']),
+            'expectedReturnType' => new Type\GenericTypeNode(
+                type: new Type\IdentifierTypeNode('int'),
+                genericTypes: [
+                    new Type\ConstTypeNode(new ConstExprIntegerNode('0')),
+                    new Type\IdentifierTypeNode('max'),
+                ],
+                variances: [
+                    'invariant',
+                    'invariant',
+                ],
             ),
         ];
     }
@@ -184,7 +203,7 @@ class TypeResolverTest extends TestCase
     public function testThatRelativeTypeWithoutClassScopeIsNotAllowed(): void
     {
         $scope = new Scope(
-            file:null,
+            file: null,
             line: null,
             class: null,
             comment: <<<'PHP'

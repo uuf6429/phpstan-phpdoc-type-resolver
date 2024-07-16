@@ -12,32 +12,45 @@ use uuf6429\PHPStanPHPDocTypeResolver\PhpImports\Resolver;
 
 class TypeResolver
 {
+    /**
+     * @see https://phpstan.org/writing-php-code/phpdoc-types
+     */
     private const BASIC_TYPES = [
-        'int',
-        'integer',
-        'float',
-        'decimal',
-        'bool',
-        'boolean',
+        'int', 'integer',
         'string',
-        'array',
-        'object',
-        'resource',
-        'callable',
-        'void',
-        'never',
-        'list',
-        'null',
-        'false',
+        'array-key',
+        'bool', 'boolean',
         'true',
+        'false',
+        'null',
+        'float', 'double',
+        'scalar',
+        'array', 'non-empty-array', 'list', 'non-empty-list',
+        'iterable',
+        'callable', 'pure-callable', 'pure-Closure',
+        'resource', 'closed-resource', 'open-resource',
+        'object',
+        'mixed',
+        'positive-int', 'negative-int', 'non-positive-int', 'non-negative-int', 'non-zero-int',
+        'class-string', 'callable-string', 'numeric-string', 'non-empty-string', 'non-falsy-string', 'truthy-string', 'literal-string',
+        'void', 'never', 'never-return', 'never-returns', 'no-return',
+        'int-mask', 'int-mask-of',
     ];
 
     private const RELATIVE_TYPES = ['self', 'static', '$this'];
 
+    private const RANGE_TYPES =  ['int'];
+
+    private const RANGE_UTILITY_TYPES =  ['min', 'max'];
+
+    private const GENERIC_UTILITY_TYPES = ['new'];
+
     public function __construct(
         private readonly Scope    $scope,
         private readonly Resolver $importsResolver = new Resolver(),
-    ) {}
+    ) {
+        //
+    }
 
     public function resolve(Type\TypeNode $type): Type\TypeNode
     {
@@ -153,10 +166,13 @@ class TypeResolver
                 throw new RuntimeException('Cannot resolve related types, expression is unsupported: ' . get_class($constExpr));
 
             case $orig instanceof Type\GenericTypeNode:
+                $isIntRange = $orig->type instanceof Type\IdentifierTypeNode && in_array($orig->type->name, self::RANGE_TYPES);
+                $isGenericUtilityType = $orig->type instanceof Type\IdentifierTypeNode && in_array($orig->type->name, self::GENERIC_UTILITY_TYPES);
                 return new Type\GenericTypeNode(
-                    type: $this->resolveType($orig->type),
+                    type: $isGenericUtilityType ? $orig->type : $this->resolveType($orig->type),
                     genericTypes: array_map(
-                        fn(Type\TypeNode $item): Type\TypeNode => $this->resolveType($item),
+                        fn(Type\TypeNode $item): Type\TypeNode => ($isIntRange && $item instanceof Type\IdentifierTypeNode && in_array($item->name, self::RANGE_UTILITY_TYPES))
+                            ? $item : $this->resolveType($item),
                         $orig->genericTypes,
                     ),
                     variances: $orig->variances,

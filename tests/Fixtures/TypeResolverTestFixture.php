@@ -64,6 +64,11 @@ abstract class TypeResolverTestFixture
      */
     abstract public function returnCallableOrTextConditionally(bool $cond): callable|string;
 
+    /**
+     * @return int<0, max>
+     */
+    abstract public function returnRandomInt(): int;
+
     public static function getTypeResolverTestClosureReturningString(): Closure
     {
         /**

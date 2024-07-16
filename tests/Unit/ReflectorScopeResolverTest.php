@@ -14,12 +14,11 @@ use ReflectionObject;
 use ReflectionParameter;
 use ReflectionProperty;
 use Reflector;
-use uuf6429\PHPStanPHPDocTypeResolver\ReflectorScopeResolver;
-use uuf6429\PHPStanPHPDocTypeResolver\TypeScope;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\ReflectorScopeResolver;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Scope;
 use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\AttributeTestFixture;
 use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\ObjectTestFixture;
 use uuf6429\PHPStanPHPDocTypeResolverTests\ReflectsValuesTrait;
-
 use function uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\getFunctionWithParameter;
 
 class ReflectorScopeResolverTest extends TestCase
@@ -27,7 +26,7 @@ class ReflectorScopeResolverTest extends TestCase
     use ReflectsValuesTrait;
 
     #[DataProvider('reflectorScopeResolverDataProvider')]
-    public function testReflectorScopeResolver(?TypeScope $expectedResult, ?Exception $expectedException, Reflector $reflector): void
+    public function testReflectorScopeResolver(?Scope $expectedResult, ?Exception $expectedException, Reflector $reflector): void
     {
         $resolver = new ReflectorScopeResolver();
 
@@ -45,7 +44,7 @@ class ReflectorScopeResolverTest extends TestCase
     }
 
     /**
-     * @return iterable<string, array{expectedResult: ?TypeScope, expectedException: ?Exception, reflector: Reflector}>
+     * @return iterable<string, array{expectedResult: ?Scope, expectedException: ?Exception, reflector: Reflector}>
      * @throws ReflectionException
      */
     public static function reflectorScopeResolverDataProvider(): iterable
@@ -67,7 +66,7 @@ class ReflectorScopeResolverTest extends TestCase
         ];
 
         yield 'ReflectionClass' => [
-            'expectedResult' => new TypeScope(
+            'expectedResult' => new Scope(
                 file: 'basename://ObjectTestFixture.php',
                 line: 10,
                 class: ObjectTestFixture::class,
@@ -82,7 +81,7 @@ class ReflectorScopeResolverTest extends TestCase
         ];
 
         yield 'ReflectionObject' => [
-            'expectedResult' => new TypeScope(
+            'expectedResult' => new Scope(
                 file: 'basename://ObjectTestFixture.php',
                 line: 10,
                 class: ObjectTestFixture::class,
@@ -135,7 +134,7 @@ class ReflectorScopeResolverTest extends TestCase
         ];
 
         yield 'ReflectionMethod' => [
-            'expectedResult' => new TypeScope(
+            'expectedResult' => new Scope(
                 file: 'basename://ObjectTestFixture.php',
                 line: 35,
                 class: ObjectTestFixture::class,
@@ -155,7 +154,7 @@ class ReflectorScopeResolverTest extends TestCase
         ];
 
         yield 'ReflectionFunction' => [
-            'expectedResult' => new TypeScope(
+            'expectedResult' => new Scope(
                 file: 'basename://functions.php',
                 line: 47,
                 class: null,

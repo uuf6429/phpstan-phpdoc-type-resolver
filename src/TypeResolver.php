@@ -7,6 +7,7 @@ use PHPStan\PhpDocParser\Ast\ConstExpr;
 use PHPStan\PhpDocParser\Ast\PhpDoc\TemplateTagValueNode;
 use PHPStan\PhpDocParser\Ast\Type;
 use RuntimeException;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Scope;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpImports\Resolver;
 
 class TypeResolver
@@ -34,8 +35,8 @@ class TypeResolver
     private const RELATIVE_TYPES = ['self', 'static', '$this'];
 
     public function __construct(
-        private readonly TypeScope $scope,
-        private readonly Resolver  $importsResolver = new Resolver(),
+        private readonly Scope    $scope,
+        private readonly Resolver $importsResolver = new Resolver(),
     ) {}
 
     public function resolve(Type\TypeNode $type): Type\TypeNode

@@ -1,6 +1,6 @@
 <?php
 
-namespace uuf6429\PHPStanPHPDocTypeResolver;
+namespace uuf6429\PHPStanPHPDocTypeResolver\PhpDoc;
 
 use InvalidArgumentException;
 use ReflectionClass;
@@ -10,14 +10,14 @@ use Reflector;
 
 class ReflectorScopeResolver
 {
-    public function resolve(Reflector $reflector): TypeScope
+    public function resolve(Reflector $reflector): Scope
     {
         /**
          * @noinspection PhpSwitchCanBeReplacedWithMatchExpressionInspection PHPUnit is not able to handle coverage for match expressions correctly.
          */
         switch (true) {
             case $reflector instanceof ReflectionClass:
-                return new TypeScope(
+                return new Scope(
                     file: $reflector->getFileName() ?: null,
                     line: $reflector->getStartLine() ?: null,
                     class: $reflector->getName(),
@@ -25,7 +25,7 @@ class ReflectorScopeResolver
                 );
 
             case $reflector instanceof ReflectionMethod:
-                return new TypeScope(
+                return new Scope(
                     file: $reflector->getFileName() ?: null,
                     line: $reflector->getStartLine() ?: null,
                     class: $reflector->getDeclaringClass()->getName(),
@@ -33,7 +33,7 @@ class ReflectorScopeResolver
                 );
 
             case $reflector instanceof ReflectionFunction:
-                return new TypeScope(
+                return new Scope(
                     file: $reflector->getFileName() ?: null,
                     line: $reflector->getStartLine() ?: null,
                     class: ($class = $reflector->getClosureScopeClass()) ? $class->getName() : null,

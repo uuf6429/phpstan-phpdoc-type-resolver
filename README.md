@@ -65,7 +65,7 @@ the method's return type:
 $reflector = new \ReflectionMethod(\My\Project\Greeter::class, 'greet');
 
 // Use the scope resolver to get information about that method
-$scopeResolver = new \uuf6429\PHPStanPHPDocTypeResolver\ReflectorScopeResolver();
+$scopeResolver = new \uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\ReflectorScopeResolver();
 $scope = $scopeResolver->resolve($reflector);
 
 // Parse the PHPDoc block with PHPStan PHPDoc parser
@@ -113,7 +113,7 @@ class Greeter {
 PHP;
 
 // Construct the scope manually - automating this will take some work
-$scope = new \uuf6429\PHPStanPHPDocTypeResolver\TypeScope(
+$scope = new \uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Scope(
     // In-memory file; you could also use php memory streams etc
     file: 'data:base64,' . base64_encode($source),
     // approximate line where the type has occurred - everything else below has to be specified manually

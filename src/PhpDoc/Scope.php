@@ -1,8 +1,8 @@
 <?php
 
-namespace uuf6429\PHPStanPHPDocTypeResolver;
+namespace uuf6429\PHPStanPHPDocTypeResolver\PhpDoc;
 
-class TypeScope
+class Scope
 {
     /**
      * Represents the scope where the type occurred:
@@ -15,5 +15,7 @@ class TypeScope
         public readonly ?int $line,
         public readonly ?string $class,
         public readonly string $comment,
-    ) {}
+    ) {
+        //
+    }
 }

@@ -15,16 +15,15 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Reflector;
 use SplFileInfo;
-use uuf6429\PHPStanPHPDocTypeResolver\ReflectorScopeResolver;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\ReflectorScopeResolver;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Scope;
 use uuf6429\PHPStanPHPDocTypeResolver\TypeResolver;
-use uuf6429\PHPStanPHPDocTypeResolver\TypeScope;
 use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\Cases\Case1;
 use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\Cases\Case2;
 use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\Cases\JumpingCaseInterface;
 use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\TypeResolverTestFixture;
 use uuf6429\PHPStanPHPDocTypeResolverTests\ParsesDocBlocksTrait;
 use uuf6429\PHPStanPHPDocTypeResolverTests\ReflectsValuesTrait;
-
 use function uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\getTypeResolverTestClosureReturningImportedType;
 use function uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\getTypeResolverTestClosureReturningString;
 
@@ -183,7 +182,7 @@ class TypeResolverTest extends TestCase
 
     public function testThatRelativeTypeWithoutClassScopeIsNotAllowed(): void
     {
-        $scope = new TypeScope(
+        $scope = new Scope(
             file:null,
             line: null,
             class: null,

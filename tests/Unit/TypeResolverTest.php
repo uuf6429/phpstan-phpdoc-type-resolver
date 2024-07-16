@@ -186,11 +186,11 @@ class TypeResolverTest extends TestCase
             file:null,
             line: null,
             class: null,
-            comment: <<<'PHPDOC'
+            comment: <<<'PHP'
                 /**
                  * @return $this
                  */
-                PHPDOC,
+                PHP,
         );
         $docBlock = $this->parseDocBlock($scope->comment);
         $typeResolver = new TypeResolver($scope);

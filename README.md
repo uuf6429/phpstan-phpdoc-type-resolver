@@ -119,11 +119,11 @@ $scope = new \uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Scope(
     // approximate line where the type has occurred - everything else below has to be specified manually
     line: 73,
     class: 'My\Project\Services\Greeter',
-    comment: <<<'PHPDOC'
+    comment: <<<'PHP'
         /**
          * @param Person|object{name: string} $person
          */
-        PHPDOC
+        PHP
 );
 
 // The factory can also be used with a custom scope

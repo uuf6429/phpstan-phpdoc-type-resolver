@@ -70,11 +70,11 @@ class ReflectorScopeResolverTest extends TestCase
                 file: 'basename://ObjectTestFixture.php',
                 line: 10,
                 class: ObjectTestFixture::class,
-                comment:  <<<'PHPDOC'
+                comment:  <<<'PHP'
                     /**
                      * @property string $dynamicProperty
                      */
-                    PHPDOC,
+                    PHP,
             ),
             'expectedException' => null,
             'reflector' => new ReflectionClass(ObjectTestFixture::class),
@@ -85,11 +85,11 @@ class ReflectorScopeResolverTest extends TestCase
                 file: 'basename://ObjectTestFixture.php',
                 line: 10,
                 class: ObjectTestFixture::class,
-                comment:  <<<'PHPDOC'
+                comment:  <<<'PHP'
                     /**
                      * @property string $dynamicProperty
                      */
-                    PHPDOC,
+                    PHP,
             ),
             'expectedException' => null,
             'reflector' => new ReflectionObject(new ObjectTestFixture('hello')),
@@ -138,7 +138,7 @@ class ReflectorScopeResolverTest extends TestCase
                 file: 'basename://ObjectTestFixture.php',
                 line: 35,
                 class: ObjectTestFixture::class,
-                comment:  <<<'PHPDOC'
+                comment:  <<<'PHP'
                     /**
                          * Greeter
                          *
@@ -147,7 +147,7 @@ class ReflectorScopeResolverTest extends TestCase
                          *
                          * @param string|Stringable $name
                          */
-                    PHPDOC,
+                    PHP,
             ),
             'expectedException' => null,
             'reflector' => self::reflectMethod([ObjectTestFixture::class, 'greet']),
@@ -158,11 +158,11 @@ class ReflectorScopeResolverTest extends TestCase
                 file: 'basename://functions.php',
                 line: 47,
                 class: null,
-                comment:  <<<'PHPDOC'
+                comment:  <<<'PHP'
                     /**
                      * @param 'hello'|'bye' $greeting
                      */
-                    PHPDOC,
+                    PHP,
             ),
             'expectedException' => null,
             'reflector' => self::reflectFunction(getFunctionWithParameter()),

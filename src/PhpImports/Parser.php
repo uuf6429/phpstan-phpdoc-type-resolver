@@ -94,7 +94,7 @@ final class Parser
         $explicitAlias = false;
 
         while ($token = $this->next()) {
-            switch(true) {
+            switch (true) {
                 case !$explicitAlias && $token->is(T_STRING):
                     $class = $alias =  $token->text;
                     break;

@@ -2,7 +2,7 @@
 
 namespace uuf6429\PHPStanPHPDocTypeResolver\PhpImports;
 
-use uuf6429\PHPStanPHPDocTypeResolver\TypeScope;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Scope;
 
 class Resolver
 {
@@ -12,12 +12,12 @@ class Resolver
     /**
      * @return array<string, string>
      */
-    public function getImports(TypeScope $scope): array
+    public function getImports(Scope $scope): array
     {
         return $this->getFile($scope->file)->getImportsAt($scope->line);
     }
 
-    public function getNamespace(TypeScope $scope): string
+    public function getNamespace(Scope $scope): string
     {
         return $this->getFile($scope->file)->getNamespaceAt($scope->line);
     }

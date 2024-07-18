@@ -28,7 +28,7 @@ class File
 
     private function getBlockAt(?int $line): ?Block
     {
-        if($line === null) {
+        if ($line === null) {
             return null;
         }
 

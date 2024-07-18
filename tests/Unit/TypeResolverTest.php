@@ -11,13 +11,15 @@ use LogicException;
 use PHPStan\PhpDocParser\Ast\ConstExpr\ConstExprIntegerNode;
 use PHPStan\PhpDocParser\Ast\ConstExpr\ConstExprStringNode;
 use PHPStan\PhpDocParser\Ast\Type;
+use PHPStan\PhpDocParser\Parser\ParserException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Reflector;
+use RuntimeException;
 use SplFileInfo;
-use uuf6429\PHPStanPHPDocTypeResolver\ReflectorScopeResolver;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\ReflectorScopeResolver;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Scope;
 use uuf6429\PHPStanPHPDocTypeResolver\TypeResolver;
-use uuf6429\PHPStanPHPDocTypeResolver\TypeScope;
 use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\Cases\Case1;
 use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\Cases\Case2;
 use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\Cases\JumpingCaseInterface;
@@ -64,10 +66,10 @@ class TypeResolverTest extends TestCase
         ];
 
         yield 'return boolean or integer' => [
-            'reflector' => self::reflectMethod([TypeResolverTestFixture::class, 'returnBoolOrInt']),
+            'reflector' => self::reflectMethod([TypeResolverTestFixture::class, 'returnBoolOrInteger']),
             'expectedReturnType' => new Type\UnionTypeNode([
                 new Type\IdentifierTypeNode('bool'),
-                new Type\IdentifierTypeNode('int'),
+                new Type\IdentifierTypeNode('integer'),
             ]),
         ];
 
@@ -132,19 +134,23 @@ class TypeResolverTest extends TestCase
             'reflector' => self::reflectMethod([TypeResolverTestFixture::class, 'returnArrayOfGroupedCases']),
             'expectedReturnType' => new Type\ArrayShapeNode([
                 new Type\ArrayShapeItemNode(
-                    new ConstExprIntegerNode('1'),
-                    false,
-                    new Type\GenericTypeNode(
-                        new Type\IdentifierTypeNode('list'),
-                        [new Type\IdentifierTypeNode(Case1::class)],
-                        ['invariant'],
+                    keyName: new ConstExprIntegerNode('1'),
+                    optional: false,
+                    valueType: new Type\GenericTypeNode(
+                        type: new Type\IdentifierTypeNode('list'),
+                        genericTypes: [
+                            new Type\IdentifierTypeNode(Case1::class),
+                        ],
+                        variances: [
+                            'invariant',
+                        ],
                     ),
                 ),
                 new Type\ArrayShapeItemNode(
-                    new ConstExprIntegerNode('2'),
-                    true,
-                    new Type\ArrayTypeNode(
-                        new Type\IdentifierTypeNode(Case2::class),
+                    keyName: new ConstExprIntegerNode('2'),
+                    optional: true,
+                    valueType: new Type\ArrayTypeNode(
+                        type: new Type\IdentifierTypeNode(Case2::class),
                     ),
                 ),
             ]),
@@ -154,12 +160,12 @@ class TypeResolverTest extends TestCase
             'reflector' => self::reflectMethod([TypeResolverTestFixture::class, 'returnCasesJumpingWrappedInObject']),
             'expectedReturnType' => new Type\ObjectShapeNode([
                 new Type\ObjectShapeItemNode(
-                    new ConstExprStringNode('jumpingCases'),
-                    false,
-                    new Type\UnionTypeNode([
+                    keyName: new ConstExprStringNode('jumpingCases'),
+                    optional: false,
+                    valueType: new Type\UnionTypeNode([
                         new Type\IdentifierTypeNode('null'),
                         new Type\ArrayTypeNode(
-                            new Type\IntersectionTypeNode([
+                            type: new Type\IntersectionTypeNode([
                                 new Type\IdentifierTypeNode(Case1::class),
                                 new Type\IdentifierTypeNode(JumpingCaseInterface::class),
                             ]),
@@ -172,26 +178,53 @@ class TypeResolverTest extends TestCase
         yield 'return callable or string conditionally' => [
             'reflector' => self::reflectMethod([TypeResolverTestFixture::class, 'returnCallableOrTextConditionally']),
             'expectedReturnType' => new Type\ConditionalTypeForParameterNode(
-                '$cond',
-                new Type\IdentifierTypeNode('true'),
-                new Type\IdentifierTypeNode('callable'),
-                new Type\ConstTypeNode(new ConstExprStringNode('text')),
-                false,
+                parameterName: '$cond',
+                targetType: new Type\IdentifierTypeNode('true'),
+                if: new Type\IdentifierTypeNode('callable'),
+                else: new Type\ConstTypeNode(new ConstExprStringNode('text')),
+                negated: false,
             ),
         ];
+
+        yield 'return int range' => [
+            'reflector' => self::reflectMethod([TypeResolverTestFixture::class, 'returnRandomInt']),
+            'expectedReturnType' => new Type\GenericTypeNode(
+                type: new Type\IdentifierTypeNode('int'),
+                genericTypes: [
+                    new Type\ConstTypeNode(new ConstExprIntegerNode('0')),
+                    new Type\IdentifierTypeNode('max'),
+                ],
+                variances: [
+                    'invariant',
+                    'invariant',
+                ],
+            ),
+        ];
+
+        // TODO enable this when generics are fully supported
+        /*yield 'return offset of virtual type' => [
+            'reflector' => self::reflectMethod([TypeResolverTestFixture::class, 'returnPredefinedColor']),
+            'expectedReturnType' => new Type\UnionTypeNode([
+                new Type\IdentifierTypeNode('null'),
+                new Type\OffsetAccessTypeNode(
+                    type: new Type\IdentifierTypeNode('TColorKey'),
+                    offset: new Type\IdentifierTypeNode('TColors'),
+                ),
+            ]),
+        ];*/
     }
 
     public function testThatRelativeTypeWithoutClassScopeIsNotAllowed(): void
     {
-        $scope = new TypeScope(
-            file:null,
+        $scope = new Scope(
+            file: null,
             line: null,
             class: null,
-            comment: <<<'PHPDOC'
+            comment: <<<'PHP'
                 /**
                  * @return $this
                  */
-                PHPDOC,
+                PHP,
         );
         $docBlock = $this->parseDocBlock($scope->comment);
         $typeResolver = new TypeResolver($scope);
@@ -200,5 +233,28 @@ class TypeResolverTest extends TestCase
         $this->expectExceptionMessage('Cannot resolve `$this`, no class was defined in the current scope');
 
         $typeResolver->resolve($docBlock->getReturnTagValues()[0]->type);
+    }
+
+    public function testThatInvalidTypeIsIgnored(): void
+    {
+        $scope = new Scope(null, null, null, '');
+        $typeResolver = new TypeResolver($scope);
+        $invalidType = new Type\InvalidTypeNode(new ParserException('', 0, 0, 0));
+
+        $processedType = $typeResolver->resolve($invalidType);
+
+        $this->assertSame($invalidType, $processedType);
+    }
+
+    public function testThatUnsupportedTypesTriggerException(): void
+    {
+        $scope = new Scope(null, null, null, '');
+        $typeResolver = new TypeResolver($scope);
+        $unsupportedType = $this->createMock(Type\TypeNode::class);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Cannot resolve related types, type is unsupported: ' . get_class($unsupportedType));
+
+        $typeResolver->resolve($unsupportedType);
     }
 }

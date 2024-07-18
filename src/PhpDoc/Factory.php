@@ -5,9 +5,7 @@ namespace uuf6429\PHPStanPHPDocTypeResolver\PhpDoc;
 use PHPStan\PhpDocParser;
 use Reflector;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpImports;
-use uuf6429\PHPStanPHPDocTypeResolver\ReflectorScopeResolver;
 use uuf6429\PHPStanPHPDocTypeResolver\TypeResolver;
-use uuf6429\PHPStanPHPDocTypeResolver\TypeScope;
 
 class Factory
 {
@@ -44,10 +42,10 @@ class Factory
      */
     public function createFromComment(string $comment, ?string $file = null, ?int $line = null, ?string $class = null): Block
     {
-        return $this->createFromScope(new TypeScope(file: $file, line: $line, class: $class, comment: $comment));
+        return $this->createFromScope(new Scope(file: $file, line: $line, class: $class, comment: $comment));
     }
 
-    public function createFromScope(TypeScope $scope): Block
+    public function createFromScope(Scope $scope): Block
     {
         return new Block(
             $this->parser->parse(

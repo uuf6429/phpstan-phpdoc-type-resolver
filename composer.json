@@ -17,7 +17,7 @@
         "ergebnis/composer-normalize": "^2.42",
         "friendsofphp/php-cs-fixer": "^3.53",
         "phpstan/phpstan": "^1.11",
-        "phpunit/phpunit": "^10",
+        "phpunit/phpunit": "^10.5.26",
         "roave/security-advisories": "dev-latest"
     },
     "autoload": {

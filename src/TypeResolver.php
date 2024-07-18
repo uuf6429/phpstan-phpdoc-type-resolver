@@ -7,6 +7,7 @@ use LogicException;
 use PHPStan\PhpDocParser\Ast\ConstExpr;
 use PHPStan\PhpDocParser\Ast\PhpDoc;
 use PHPStan\PhpDocParser\Ast\Type;
+use PHPStan\PhpDocParser\Ast\Type\CallableTypeParameterNode;
 use RuntimeException;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Scope;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpImports\Resolver;
@@ -55,79 +56,21 @@ class TypeResolver
 
     public function resolve(Type\TypeNode $type): Type\TypeNode
     {
-        return $this->cast($this->resolveType($type), Type\TypeNode::class);
-    }
-
-    /**
-     * @template T
-     * @param class-string<T> $class
-     * @return ($nullable is true ? ?T : T)
-     */
-    private function cast(mixed $value, string $class, bool $nullable = false)
-    {
-        if (!$nullable && $value === null) {
-            throw new InvalidArgumentException("Value must be an instance of `$class`, null given");
-        }
-        if (is_object($value) && !is_a($value, $class)) {
-            throw new InvalidArgumentException("Value must be an instance of `$class`, `" . get_debug_type($value) . "` given");
-        }
-        return $value;
+        return $this->resolveType($type, Type\TypeNode::class, false);
     }
 
     /**
      * @template T of mixed
-     * @param T $orig
-     * @return (
-     *     T is null
-     *         ? null
-     *         : T is Type\InvalidTypeNode
-     *             ? Type\InvalidTypeNode
-     *             : T is Type\ArrayShapeItemNode
-     *                 ? Type\ArrayShapeItemNode
-     *                 : T is Type\ArrayShapeNode
-     *                     ? Type\ArrayShapeNode
-     *                     : T is Type\ArrayTypeNode
-     *                         ? Type\ArrayTypeNode
-     *                         : T is Type\CallableTypeNode
-     *                             ? Type\CallableTypeNode
-     *                             : T is Type\ConditionalTypeForParameterNode
-     *                                 ? Type\ConditionalTypeForParameterNode
-     *                                 : T is Type\ConditionalTypeNode
-     *                                     ? Type\ConditionalTypeNode
-     *                                     : T is Type\ConstTypeNode
-     *                                         ? Type\ConstTypeNode
-     *                                         : T is Type\GenericTypeNode
-     *                                             ? Type\GenericTypeNode
-     *                                             : T is Type\IdentifierTypeNode
-     *                                                 ? Type\IdentifierTypeNode
-     *                                                 : T is Type\IntersectionTypeNode
-     *                                                     ? Type\IntersectionTypeNode
-     *                                                     : T is Type\NullableTypeNode
-     *                                                         ? Type\NullableTypeNode
-     *                                                         : T is Type\ObjectShapeItemNode
-     *                                                             ? Type\ObjectShapeItemNode
-     *                                                             : T is Type\ObjectShapeNode
-     *                                                                 ? Type\ObjectShapeNode
-     *                                                                 : T is Type\OffsetAccessTypeNode
-     *                                                                     ? Type\OffsetAccessTypeNode
-     *                                                                     : T is Type\ThisTypeNode
-     *                                                                         ? Type\IdentifierTypeNode
-     *                                                                         : T is Type\UnionTypeNode
-     *                                                                             ? Type\UnionTypeNode
-     *                                                                             : T is Type\CallableTypeParameterNode
-     *                                                                                 ? Type\CallableTypeParameterNode
-     *                                                                                 : T is PhpDoc\TemplateTagValueNode
-     *                                                                                     ? PhpDoc\TemplateTagValueNode
-     *                                                                                     : never
-     * )
+     * @param class-string<T> $asClass
+     * @return ($nullable is true ? ?T : T)
      */
-    private function resolveType(mixed $orig)
+    private function resolveType(mixed $orig, string $asClass, bool $nullable)
     {
         $constExpr = $orig instanceof Type\ConstTypeNode ? $orig->constExpr : null;
         $isIntRange = $orig instanceof Type\GenericTypeNode && $orig->type instanceof Type\IdentifierTypeNode && in_array($orig->type->name, self::RANGE_TYPES);
         $isGenericUtilityType = $orig instanceof Type\GenericTypeNode && $orig->type instanceof Type\IdentifierTypeNode && in_array($orig->type->name, self::GENERIC_UTILITY_TYPES);
 
-        return match (true) {
+        $result = match (true) {
             $orig === null
             => null,
 
@@ -138,13 +81,13 @@ class TypeResolver
             => new Type\ArrayShapeItemNode(
                 keyName: $orig->keyName,
                 optional: $orig->optional,
-                valueType: $this->cast($this->resolveType($orig->valueType), Type\TypeNode::class),
+                valueType: $this->resolveType($orig->valueType, Type\TypeNode::class, false),
             ),
 
             $orig instanceof Type\ArrayShapeNode
             => new Type\ArrayShapeNode(
                 items: array_map(
-                    fn(Type\ArrayShapeItemNode $item): Type\ArrayShapeItemNode => $this->resolveType($item),
+                    fn(Type\ArrayShapeItemNode $item): Type\ArrayShapeItemNode => $this->resolveType($item, Type\ArrayShapeItemNode::class, false),
                     $orig->items,
                 ),
                 sealed: $orig->sealed,
@@ -153,19 +96,19 @@ class TypeResolver
 
             $orig instanceof Type\ArrayTypeNode
             => new Type\ArrayTypeNode(
-                type: $this->cast($this->resolveType($orig->type), Type\TypeNode::class),
+                type: $this->resolveType($orig->type, Type\TypeNode::class, false),
             ),
 
             $orig instanceof Type\CallableTypeNode
             => new Type\CallableTypeNode(
-                identifier: $this->resolveType($orig->identifier),
+                identifier: $this->resolveType($orig->identifier, Type\IdentifierTypeNode::class, false),
                 parameters: array_map(
-                    fn(Type\CallableTypeParameterNode $item): Type\CallableTypeParameterNode => $this->resolveType($item),
+                    fn(Type\CallableTypeParameterNode $item): Type\CallableTypeParameterNode => $this->resolveType($item, CallableTypeParameterNode::class, false),
                     $orig->parameters,
                 ),
-                returnType: $this->cast($this->resolveType($orig->returnType), Type\TypeNode::class),
+                returnType: $this->resolveType($orig->returnType, Type\TypeNode::class, false),
                 templateTypes: array_map(
-                    fn(PhpDoc\TemplateTagValueNode $item): PhpDoc\TemplateTagValueNode => $this->resolveType($item),
+                    fn(PhpDoc\TemplateTagValueNode $item): PhpDoc\TemplateTagValueNode => $this->resolveType($item, PhpDoc\TemplateTagValueNode::class, false),
                     $orig->templateTypes,
                 ),
             ),
@@ -173,18 +116,18 @@ class TypeResolver
             $orig instanceof Type\ConditionalTypeForParameterNode
             => new Type\ConditionalTypeForParameterNode(
                 parameterName: $orig->parameterName,
-                targetType: $this->cast($this->resolveType($orig->targetType), Type\TypeNode::class),
-                if: $this->cast($this->resolveType($orig->if), Type\TypeNode::class),
-                else: $this->cast($this->resolveType($orig->else), Type\TypeNode::class),
+                targetType: $this->resolveType($orig->targetType, Type\TypeNode::class, false),
+                if: $this->resolveType($orig->if, Type\TypeNode::class, false),
+                else: $this->resolveType($orig->else, Type\TypeNode::class, false),
                 negated: $orig->negated,
             ),
 
             $orig instanceof Type\ConditionalTypeNode
             => new Type\ConditionalTypeNode(
-                subjectType: $this->cast($this->resolveType($orig->subjectType), Type\TypeNode::class),
-                targetType: $this->cast($this->resolveType($orig->targetType), Type\TypeNode::class),
-                if: $this->cast($this->resolveType($orig->if), Type\TypeNode::class),
-                else: $this->cast($this->resolveType($orig->else), Type\TypeNode::class),
+                subjectType: $this->resolveType($orig->subjectType, Type\TypeNode::class, false),
+                targetType: $this->resolveType($orig->targetType, Type\TypeNode::class, false),
+                if: $this->resolveType($orig->if, Type\TypeNode::class, false),
+                else: $this->resolveType($orig->else, Type\TypeNode::class, false),
                 negated: $orig->negated,
             ),
 
@@ -202,8 +145,8 @@ class TypeResolver
                 $constExpr instanceof ConstExpr\ConstExprArrayItemNode
                 => new Type\ConstTypeNode(
                     constExpr: new ConstExpr\ConstExprArrayItemNode(
-                        key: $this->cast($this->resolveType($constExpr->key), ConstExpr\ConstExprNode::class, true),
-                        value: $this->cast($this->resolveType($constExpr->value), ConstExpr\ConstExprNode::class),
+                        key: $this->resolveType($constExpr->key, ConstExpr\ConstExprNode::class, true),
+                        value: $this->resolveType($constExpr->value, ConstExpr\ConstExprNode::class, false),
                     ),
                 ),
 
@@ -211,7 +154,7 @@ class TypeResolver
                 => new Type\ConstTypeNode(
                     constExpr: new ConstExpr\ConstExprArrayNode(
                         items: array_map(
-                            fn(ConstExpr\ConstExprArrayItemNode $item): ConstExpr\ConstExprArrayItemNode => $this->cast($this->resolveType($item), ConstExpr\ConstExprArrayItemNode::class),
+                            fn(ConstExpr\ConstExprArrayItemNode $item): ConstExpr\ConstExprArrayItemNode => $this->resolveType($item, ConstExpr\ConstExprArrayItemNode::class, false),
                             $constExpr->items,
                         ),
                     ),
@@ -231,10 +174,10 @@ class TypeResolver
 
             $orig instanceof Type\GenericTypeNode
             => new Type\GenericTypeNode(
-                type: $isGenericUtilityType ? $orig->type : $this->resolveType($orig->type),
+                type: $isGenericUtilityType ? $orig->type : $this->resolveType($orig->type, Type\IdentifierTypeNode::class, false),
                 genericTypes: array_map(
                     fn(Type\TypeNode $item): Type\TypeNode => ($isIntRange && $item instanceof Type\IdentifierTypeNode && in_array($item->name, self::RANGE_UTILITY_TYPES))
-                        ? $item : $this->cast($this->resolveType($item), Type\TypeNode::class),
+                        ? $item : $this->resolveType($item, Type\TypeNode::class, false),
                     $orig->genericTypes,
                 ),
                 variances: $orig->variances,
@@ -248,35 +191,35 @@ class TypeResolver
             $orig instanceof Type\IntersectionTypeNode
             => new Type\IntersectionTypeNode(
                 types: array_map(
-                    fn(Type\TypeNode $item): Type\TypeNode => $this->cast($this->resolveType($item), Type\TypeNode::class),
+                    fn(Type\TypeNode $item): Type\TypeNode => $this->resolveType($item, Type\TypeNode::class, false),
                     $orig->types,
                 ),
             ),
 
             $orig instanceof Type\NullableTypeNode
             => new Type\NullableTypeNode(
-                type: $this->cast($this->resolveType($orig->type), Type\TypeNode::class),
+                type: $this->resolveType($orig->type, Type\TypeNode::class, false),
             ),
 
             $orig instanceof Type\ObjectShapeItemNode
             => new Type\ObjectShapeItemNode(
                 keyName: $orig->keyName,
                 optional: $orig->optional,
-                valueType: $this->cast($this->resolveType($orig->valueType), Type\TypeNode::class),
+                valueType: $this->resolveType($orig->valueType, Type\TypeNode::class, false),
             ),
 
             $orig instanceof Type\ObjectShapeNode
             => new Type\ObjectShapeNode(
                 items: array_map(
-                    fn(Type\ObjectShapeItemNode $item): Type\ObjectShapeItemNode => $this->resolveType($item),
+                    fn(Type\ObjectShapeItemNode $item): Type\ObjectShapeItemNode => $this->resolveType($item, Type\ObjectShapeItemNode::class, false),
                     $orig->items,
                 ),
             ),
 
             $orig instanceof Type\OffsetAccessTypeNode
             => new Type\OffsetAccessTypeNode(
-                type: $this->cast($this->resolveType($orig->offset), Type\TypeNode::class),
-                offset: $this->cast($this->resolveType($orig->type), Type\TypeNode::class),
+                type: $this->resolveType($orig->offset, Type\TypeNode::class, false),
+                offset: $this->resolveType($orig->type, Type\TypeNode::class, false),
             ),
 
             $orig instanceof Type\ThisTypeNode
@@ -288,14 +231,14 @@ class TypeResolver
             $orig instanceof Type\UnionTypeNode
             => new Type\UnionTypeNode(
                 types: array_map(
-                    fn(Type\TypeNode $item): Type\TypeNode => $this->cast($this->resolveType($item), Type\TypeNode::class),
+                    fn(Type\TypeNode $item): Type\TypeNode => $this->resolveType($item, Type\TypeNode::class, false),
                     $orig->types,
                 ),
             ),
 
             $orig instanceof Type\CallableTypeParameterNode
             => new Type\CallableTypeParameterNode(
-                type: $this->cast($this->resolveType($orig->type), Type\TypeNode::class),
+                type: $this->resolveType($orig->type, Type\TypeNode::class, false),
                 isReference: $orig->isReference,
                 isVariadic: $orig->isVariadic,
                 parameterName: $orig->parameterName,
@@ -305,14 +248,18 @@ class TypeResolver
             $orig instanceof PhpDoc\TemplateTagValueNode
             => new PhpDoc\TemplateTagValueNode(
                 name: $orig->name,
-                bound: $this->cast($this->resolveType($orig->bound), Type\TypeNode::class),
+                bound: $this->resolveType($orig->bound, Type\TypeNode::class, false),
                 description: $orig->description ?: '',
-                default: $this->cast($this->resolveType($orig->default), Type\TypeNode::class),
+                default: $this->resolveType($orig->default, Type\TypeNode::class, false),
             ),
 
             default
             => throw new RuntimeException('Cannot resolve related types, type is unsupported: ' . get_debug_type($orig)),
         };
+
+        assert(($nullable && $result === null) || (is_object($result) && is_a($result, $asClass)));
+
+        return $result;
     }
 
     private function resolveIdentifier(string $symbol): string

@@ -111,6 +111,17 @@ class FactoryTest extends TestCase
         );
     }
 
+    public function testThatMissingSummaryAndDescriptionWorks(): void
+    {
+        $factory = Factory::createInstance();
+        $reflector = self::reflectMethod([ObjectTestFixture::class, '__construct']);
+
+        $block = $factory->createFromReflector($reflector);
+
+        $this->assertEquals('', $block->getSummary());
+        $this->assertEquals('', $block->getDescription());
+    }
+
     public function testThatTagExistenceCheckWorks(): void
     {
         $factory = Factory::createInstance();

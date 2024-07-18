@@ -11,9 +11,11 @@ use LogicException;
 use PHPStan\PhpDocParser\Ast\ConstExpr\ConstExprIntegerNode;
 use PHPStan\PhpDocParser\Ast\ConstExpr\ConstExprStringNode;
 use PHPStan\PhpDocParser\Ast\Type;
+use PHPStan\PhpDocParser\Parser\ParserException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Reflector;
+use RuntimeException;
 use SplFileInfo;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\ReflectorScopeResolver;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Scope;
@@ -198,6 +200,18 @@ class TypeResolverTest extends TestCase
                 ],
             ),
         ];
+
+        // TODO enable this when generics are fully supported
+        /*yield 'return offset of virtual type' => [
+            'reflector' => self::reflectMethod([TypeResolverTestFixture::class, 'returnPredefinedColor']),
+            'expectedReturnType' => new Type\UnionTypeNode([
+                new Type\IdentifierTypeNode('null'),
+                new Type\OffsetAccessTypeNode(
+                    type: new Type\IdentifierTypeNode('TColorKey'),
+                    offset: new Type\IdentifierTypeNode('TColors'),
+                ),
+            ]),
+        ];*/
     }
 
     public function testThatRelativeTypeWithoutClassScopeIsNotAllowed(): void
@@ -219,5 +233,28 @@ class TypeResolverTest extends TestCase
         $this->expectExceptionMessage('Cannot resolve `$this`, no class was defined in the current scope');
 
         $typeResolver->resolve($docBlock->getReturnTagValues()[0]->type);
+    }
+
+    public function testThatInvalidTypeIsIgnored(): void
+    {
+        $scope = new Scope(null, null, null, '');
+        $typeResolver = new TypeResolver($scope);
+        $invalidType = new Type\InvalidTypeNode(new ParserException('', 0, 0, 0));
+
+        $processedType = $typeResolver->resolve($invalidType);
+
+        $this->assertSame($invalidType, $processedType);
+    }
+
+    public function testThatUnsupportedTypesTriggerException(): void
+    {
+        $scope = new Scope(null, null, null, '');
+        $typeResolver = new TypeResolver($scope);
+        $unsupportedType = $this->createMock(Type\TypeNode::class);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Cannot resolve related types, type is unsupported: ' . get_class($unsupportedType));
+
+        $typeResolver->resolve($unsupportedType);
     }
 }

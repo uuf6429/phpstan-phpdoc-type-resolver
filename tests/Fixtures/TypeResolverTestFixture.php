@@ -6,6 +6,9 @@ use Closure;
 use uuf6429;
 use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\Cases\{Case1, Case2};
 
+/**
+ * @phpstan-type TColors array{red: '#F00', green: '#0F0', blue: '#00F'}
+ */
 abstract class TypeResolverTestFixture
 {
     /**
@@ -68,6 +71,13 @@ abstract class TypeResolverTestFixture
      * @return int<0, max>
      */
     abstract public function returnRandomInt(): int;
+
+    /**
+     * @template TColorKey of key-of<TColors>
+     * @param TColorKey $colorName
+     * @return null|TColors[TColorKey]
+     */
+    abstract public function translateColor(string $colorName): ?string;
 
     public static function getTypeResolverTestClosureReturningString(): Closure
     {

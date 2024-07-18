@@ -148,7 +148,7 @@ final class Parser
     {
         $namespace = '';
         while ($token = $this->next()) {
-            if($token->text === ';') {
+            if ($token->text === ';') {
                 return $namespace;
             }
 

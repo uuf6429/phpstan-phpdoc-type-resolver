@@ -28,6 +28,7 @@ use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\Cases\Case2;
 use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\Cases\JumpingCaseInterface;
 use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\TypeResolverTestFixture;
 use uuf6429\PHPStanPHPDocTypeResolverTests\ReflectsValuesTrait;
+
 use function uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\getTypeResolverTestClosureReturningImportedType;
 use function uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\getTypeResolverTestClosureReturningString;
 

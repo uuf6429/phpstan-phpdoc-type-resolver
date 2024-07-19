@@ -5,6 +5,9 @@ namespace uuf6429\PHPStanPHPDocTypeResolver\PhpImports;
 use LogicException;
 use PhpToken;
 
+/**
+ * Parses a PHP source code file into a {@see Block}s of namespaces contained with a single {@see File}.
+ */
 final class Parser
 {
     /**

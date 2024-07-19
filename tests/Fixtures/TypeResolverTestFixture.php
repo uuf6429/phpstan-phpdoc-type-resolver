@@ -13,7 +13,7 @@ abstract class TypeResolverTestFixture
 {
     public const TYPE_A = 'a';
     public const TYPE_B = 'b';
-    private const TYPE_C = 'c';
+    protected const TYPE_C = 'c';
 
     /**
      * @return void Returns a **digital representation** of _nothingness manifested_.

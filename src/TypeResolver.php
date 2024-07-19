@@ -8,9 +8,14 @@ use PHPStan\PhpDocParser\Ast\PhpDoc;
 use PHPStan\PhpDocParser\Ast\Type;
 use PHPStan\PhpDocParser\Ast\Type\CallableTypeParameterNode;
 use RuntimeException;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Factory;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Scope;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpImports\Resolver;
 
+/**
+ * This is the main class that resolves (fully-qualifies) PHPStan PHPDoc type objects. However, in practice you'd
+ * probably want to use the {@see Factory} class instead, since it provides useful helper methods.
+ */
 class TypeResolver
 {
     /**

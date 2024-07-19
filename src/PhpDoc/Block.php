@@ -9,6 +9,9 @@ use PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocTextNode;
 use PHPStan\PhpDocParser\Ast\Type\TypeNode;
 use uuf6429\PHPStanPHPDocTypeResolver\TypeResolver;
 
+/**
+ * A class representing a single parsed PHPDoc block element.
+ */
 class Block
 {
     /**

@@ -2,6 +2,9 @@
 
 namespace uuf6429\PHPStanPHPDocTypeResolver\PhpImports;
 
+/**
+ * Represents all the namespaced blocks of code found in a PHP file.
+ */
 class File
 {
     /**

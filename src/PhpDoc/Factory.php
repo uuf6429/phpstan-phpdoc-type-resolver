@@ -7,6 +7,9 @@ use Reflector;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpImports;
 use uuf6429\PHPStanPHPDocTypeResolver\TypeResolver;
 
+/**
+ * A handy class that sets up the various objects required for parsing PHPDoc blocks (and fully resolving types).
+ */
 class Factory
 {
     private readonly ReflectorScopeResolver $scopeResolver;
@@ -20,15 +23,22 @@ class Factory
         return new self();
     }
 
-    public function __construct()
-    {
-        $this->genericTypesExporter = new GenericTypesExtractor($this);
-        $this->scopeResolver = new ReflectorScopeResolver($this->genericTypesExporter);
-        $this->lexer = new PhpDocParser\Lexer\Lexer();
-        $constExprParser = new PhpDocParser\Parser\ConstExprParser();
-        $typeParser = new PhpDocParser\Parser\TypeParser($constExprParser);
-        $this->parser = new PhpDocParser\Parser\PhpDocParser($typeParser, $constExprParser);
-        $this->phpImportsResolver = new PhpImports\Resolver();
+    public function __construct(
+        GenericTypesExtractor $genericTypesExporter =  null,
+        ReflectorScopeResolver $scopeResolver = null,
+        PhpDocParser\Lexer\Lexer $phpDocParserLexer = null,
+        PhpDocParser\Parser\ConstExprParser $phpDocConstExprParser = null,
+        PhpDocParser\Parser\TypeParser$phpDocTypeParser = null,
+        PhpDocParser\Parser\PhpDocParser $phpDocParser = null,
+        PhpImports\Resolver $phpImportsResolver = null,
+    ) {
+        $this->genericTypesExporter = $genericTypesExporter ?? new GenericTypesExtractor($this);
+        $this->scopeResolver = $scopeResolver ?? new ReflectorScopeResolver($this->genericTypesExporter);
+        $this->lexer = $phpDocParserLexer ?? new PhpDocParser\Lexer\Lexer();
+        $constExprParser = $phpDocConstExprParser ?? new PhpDocParser\Parser\ConstExprParser();
+        $typeParser = $phpDocTypeParser ?? new PhpDocParser\Parser\TypeParser($constExprParser);
+        $this->parser = $phpDocParser ?? new PhpDocParser\Parser\PhpDocParser($typeParser, $constExprParser);
+        $this->phpImportsResolver = $phpImportsResolver ?? new PhpImports\Resolver();
     }
 
     public function createFromReflector(Reflector $reflector): Block

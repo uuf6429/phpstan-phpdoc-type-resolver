@@ -11,6 +11,10 @@ use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\Cases\{Case1, Case2};
  */
 abstract class TypeResolverTestFixture
 {
+    public const TYPE_A = 'a';
+    public const TYPE_B = 'b';
+    private const TYPE_C = 'c';
+
     /**
      * @return void Returns a **digital representation** of _nothingness manifested_.
      *              Mind the dragons.
@@ -95,6 +99,16 @@ abstract class TypeResolverTestFixture
      * @return callable<T>(): T
      */
     abstract public function returnCallableWithTemplates(): callable;
+
+    /**
+     * @return self::TYPE_A|static::TYPE_B
+     */
+    abstract public function returnOneClassConstant(): string;
+
+    /**
+     * @return list<self::TYPE_*>
+     */
+    abstract public function returnAllClassConstants(): array;
 
     public static function getTypeResolverTestClosureReturningString(): Closure
     {

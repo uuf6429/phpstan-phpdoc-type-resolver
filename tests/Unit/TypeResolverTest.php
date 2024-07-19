@@ -10,6 +10,7 @@ namespace uuf6429\PHPStanPHPDocTypeResolverTests\Unit;
 use LogicException;
 use PHPStan\PhpDocParser\Ast\ConstExpr\ConstExprIntegerNode;
 use PHPStan\PhpDocParser\Ast\ConstExpr\ConstExprStringNode;
+use PHPStan\PhpDocParser\Ast\ConstExpr\ConstFetchNode;
 use PHPStan\PhpDocParser\Ast\PhpDoc\ReturnTagValueNode;
 use PHPStan\PhpDocParser\Ast\PhpDoc\TemplateTagValueNode;
 use PHPStan\PhpDocParser\Ast\Type;
@@ -27,7 +28,6 @@ use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\Cases\Case2;
 use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\Cases\JumpingCaseInterface;
 use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\TypeResolverTestFixture;
 use uuf6429\PHPStanPHPDocTypeResolverTests\ReflectsValuesTrait;
-
 use function uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\getTypeResolverTestClosureReturningImportedType;
 use function uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\getTypeResolverTestClosureReturningString;
 
@@ -261,6 +261,42 @@ class TypeResolverTest extends TestCase
                         description: '',
                         default: null,
                     ),
+                ],
+            ),
+        ];
+
+        yield 'return a class constant' => [
+            'reflector' => self::reflectMethod([TypeResolverTestFixture::class, 'returnOneClassConstant']),
+            'expectedReturnType' => new Type\UnionTypeNode([
+                new Type\ConstTypeNode(
+                    constExpr: new ConstFetchNode(
+                        className: TypeResolverTestFixture::class,
+                        name: 'TYPE_A',
+                    ),
+                ),
+                new Type\ConstTypeNode(
+                    constExpr: new ConstFetchNode(
+                        className: TypeResolverTestFixture::class,
+                        name: 'TYPE_B',
+                    ),
+                ),
+            ]),
+        ];
+
+        yield 'return all class constants' => [
+            'reflector' => self::reflectMethod([TypeResolverTestFixture::class, 'returnAllClassConstants']),
+            'expectedReturnType' => new Type\GenericTypeNode(
+                type: new Type\IdentifierTypeNode('list'),
+                genericTypes: [
+                    new Type\ConstTypeNode(
+                        constExpr: new ConstFetchNode(
+                            className: TypeResolverTestFixture::class,
+                            name: 'TYPE_*',
+                        ),
+                    ),
+                ],
+                variances: [
+                    'invariant',
                 ],
             ),
         ];

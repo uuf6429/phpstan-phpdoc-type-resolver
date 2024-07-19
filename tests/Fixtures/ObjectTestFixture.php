@@ -6,6 +6,8 @@ use Stringable;
 
 /**
  * @property string $dynamicProperty
+ * @phpstan-import-type TColors from TypeResolverTestFixture
+ * @phpstan-import-type TColors from TypeResolverTestFixture as TOtherColors
  */
 class ObjectTestFixture
 {

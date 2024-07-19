@@ -11,6 +11,10 @@ use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\Cases\{Case1, Case2};
  */
 abstract class TypeResolverTestFixture
 {
+    public const TYPE_A = 'a';
+    public const TYPE_B = 'b';
+    protected const TYPE_C = 'c';
+
     /**
      * @return void Returns a **digital representation** of _nothingness manifested_.
      *              Mind the dragons.
@@ -73,11 +77,38 @@ abstract class TypeResolverTestFixture
     abstract public function returnRandomInt(): int;
 
     /**
+     * @template T of object
+     * @param class-string<T> $class
+     * @return new<T>
+     */
+    abstract public function createClass(string $class): object;
+
+    /**
      * @template TColorKey of key-of<TColors>
      * @param TColorKey $colorName
      * @return null|TColors[TColorKey]
      */
     abstract public function translateColor(string $colorName): ?string;
+
+    /**
+     * @return callable(int, bool $named): string
+     */
+    abstract public function returnCallableWithTypedArgs(): callable;
+
+    /**
+     * @return callable<T>(): T
+     */
+    abstract public function returnCallableWithTemplates(): callable;
+
+    /**
+     * @return self::TYPE_A|static::TYPE_B
+     */
+    abstract public function returnOneClassConstant(): string;
+
+    /**
+     * @return list<self::TYPE_*>
+     */
+    abstract public function returnAllClassConstants(): array;
 
     public static function getTypeResolverTestClosureReturningString(): Closure
     {

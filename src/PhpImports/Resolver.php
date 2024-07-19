@@ -4,6 +4,10 @@ namespace uuf6429\PHPStanPHPDocTypeResolver\PhpImports;
 
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Scope;
 
+/**
+ * A helper class that provides information about "current imports" and the "current namespace" at any given line in a
+ * PHP source code file.
+ */
 class Resolver
 {
     /** @var array<string, File> */

@@ -9,6 +9,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ReflectionClassConstant;
+use ReflectionEnum;
 use ReflectionException;
 use ReflectionObject;
 use ReflectionParameter;
@@ -17,7 +18,10 @@ use Reflector;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\ReflectorScopeResolver;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Scope;
 use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\AttributeTestFixture;
+use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\IntegerEnumTestFixture;
 use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\ObjectTestFixture;
+use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\PlainEnumTestFixture;
+use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\StringEnumTestFixture;
 use uuf6429\PHPStanPHPDocTypeResolverTests\ReflectsValuesTrait;
 
 use function uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\getFunctionWithParameter;
@@ -38,10 +42,14 @@ class ReflectorScopeResolverTest extends TestCase
 
         $actualResult = (array)$resolver->resolve($reflector);
         if (isset($actualResult['file'])) {
-            $actualResult['file'] = 'basename://' . basename($actualResult['file']);
+            $actualResult['file'] = str_replace(DIRECTORY_SEPARATOR, '/', $actualResult['file']);
+        }
+        $expectedResult = (array)$expectedResult;
+        if (isset($expectedResult['file'])) {
+            $expectedResult['file'] = str_replace(DIRECTORY_SEPARATOR, '/', $expectedResult['file']);
         }
 
-        $this->assertEquals((array)$expectedResult, $actualResult);
+        $this->assertEquals($expectedResult, $actualResult);
     }
 
     /**
@@ -68,14 +76,17 @@ class ReflectorScopeResolverTest extends TestCase
 
         yield 'ReflectionClass' => [
             'expectedResult' => new Scope(
-                file: 'basename://ObjectTestFixture.php',
-                line: 10,
+                file: dirname(__DIR__) . '/Fixtures/ObjectTestFixture.php',
+                line: 12,
                 class: ObjectTestFixture::class,
                 comment:  <<<'PHP'
                     /**
                      * @property string $dynamicProperty
+                     * @phpstan-import-type TColors from TypeResolverTestFixture
+                     * @phpstan-import-type TColors from TypeResolverTestFixture as TOtherColors
                      */
                     PHP,
+                inheritedGenericTypes: [],
             ),
             'expectedException' => null,
             'reflector' => new ReflectionClass(ObjectTestFixture::class),
@@ -83,37 +94,58 @@ class ReflectorScopeResolverTest extends TestCase
 
         yield 'ReflectionObject' => [
             'expectedResult' => new Scope(
-                file: 'basename://ObjectTestFixture.php',
-                line: 10,
+                file: dirname(__DIR__) . '/Fixtures/ObjectTestFixture.php',
+                line: 12,
                 class: ObjectTestFixture::class,
                 comment:  <<<'PHP'
                     /**
                      * @property string $dynamicProperty
+                     * @phpstan-import-type TColors from TypeResolverTestFixture
+                     * @phpstan-import-type TColors from TypeResolverTestFixture as TOtherColors
                      */
                     PHP,
+                inheritedGenericTypes: [],
             ),
             'expectedException' => null,
             'reflector' => new ReflectionObject(new ObjectTestFixture('hello')),
         ];
-        /* TODO
+
         yield 'ReflectionEnum' => [
-            'expectedResult' => null,
+            'expectedResult' => new Scope(
+                file: dirname(__DIR__) . '/Fixtures/IntegerEnumTestFixture.php',
+                line: 5,
+                class: IntegerEnumTestFixture::class,
+                comment: '',
+                inheritedGenericTypes: [],
+            ),
             'expectedException' => null,
-            'reflector' => self::reflectMethod(),
+            'reflector' => new ReflectionEnum(IntegerEnumTestFixture::class),
         ];
 
         yield 'ReflectionEnumUnitCase' => [
-            'expectedResult' => null,
+            'expectedResult' => new Scope(
+                file: dirname(__DIR__) . '/Fixtures/PlainEnumTestFixture.php',
+                line: 5,
+                class: PlainEnumTestFixture::class,
+                comment: '',
+                inheritedGenericTypes: [],
+            ),
             'expectedException' => null,
-            'reflector' => new \ReflectionEnum(),
+            'reflector' => (new ReflectionEnum(PlainEnumTestFixture::class))->getCase('Case1'),
         ];
 
         yield 'ReflectionEnumBackedCase' => [
-            'expectedResult' => null,
+            'expectedResult' => new Scope(
+                file: dirname(__DIR__) . '/Fixtures/StringEnumTestFixture.php',
+                line: 5,
+                class: StringEnumTestFixture::class,
+                comment: '',
+                inheritedGenericTypes: [],
+            ),
             'expectedException' => null,
-            'reflector' => self::reflectMethod(),
+            'reflector' => (new ReflectionEnum(StringEnumTestFixture::class))->getCase('Case1'),
         ];
-
+        /*
         yield 'ReflectionExtension' => [
             'expectedResult' => null,
             'expectedException' => null,
@@ -127,17 +159,24 @@ class ReflectorScopeResolverTest extends TestCase
         ];
         */
         yield 'ReflectionClassConstant' => [
-            'expectedResult' => null,
-            'expectedException' => new InvalidArgumentException(
-                'Cannot determine scope information for reflector of type ReflectionClassConstant',
+            'expectedResult' => new Scope(
+                file: dirname(__DIR__) . '/Fixtures/ObjectTestFixture.php',
+                line: 12,
+                class: ObjectTestFixture::class,
+                comment: '',
+                inheritedGenericTypes: [
+                    'TColors',
+                    'TOtherColors',
+                ],
             ),
+            'expectedException' => null,
             'reflector' => new ReflectionClassConstant(ObjectTestFixture::class, 'TEST'),
         ];
 
         yield 'ReflectionMethod' => [
             'expectedResult' => new Scope(
-                file: 'basename://ObjectTestFixture.php',
-                line: 35,
+                file: dirname(__DIR__) . '/Fixtures/ObjectTestFixture.php',
+                line: 37,
                 class: ObjectTestFixture::class,
                 comment:  <<<'PHP'
                     /**
@@ -149,6 +188,10 @@ class ReflectorScopeResolverTest extends TestCase
                          * @param string|Stringable $name
                          */
                     PHP,
+                inheritedGenericTypes: [
+                    'TColors',
+                    'TOtherColors',
+                ],
             ),
             'expectedException' => null,
             'reflector' => self::reflectMethod([ObjectTestFixture::class, 'greet']),
@@ -156,7 +199,7 @@ class ReflectorScopeResolverTest extends TestCase
 
         yield 'ReflectionFunction' => [
             'expectedResult' => new Scope(
-                file: 'basename://functions.php',
+                file: dirname(__DIR__) . '/Fixtures/functions.php',
                 line: 47,
                 class: null,
                 comment:  <<<'PHP'
@@ -164,6 +207,7 @@ class ReflectorScopeResolverTest extends TestCase
                      * @param 'hello'|'bye' $greeting
                      */
                     PHP,
+                inheritedGenericTypes: [],
             ),
             'expectedException' => null,
             'reflector' => self::reflectFunction(getFunctionWithParameter()),

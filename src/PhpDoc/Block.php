@@ -9,11 +9,24 @@ use PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocTextNode;
 use PHPStan\PhpDocParser\Ast\Type\TypeNode;
 use uuf6429\PHPStanPHPDocTypeResolver\TypeResolver;
 
+/**
+ * A class representing a single parsed PHPDoc block element.
+ */
 class Block
 {
+    /**
+     * @var null|list<string>
+     */
+    private null|array $genericTypes = null;
+
+    /**
+     * @param list<string> $inheritedGenericTypes
+     */
     public function __construct(
         private readonly PhpDocNode   $docNode,
         private readonly TypeResolver $typeResolver,
+        private readonly array $inheritedGenericTypes,
+        private readonly GenericTypesExtractor $genericTypesExtractor,
     ) {
         //
     }
@@ -90,7 +103,7 @@ class Block
             throw new MultipleTagsFoundException($name);
         }
 
-        return $this->resolveTypesInTag($tags[0]?->value ?? null);
+        return $this->resolveTypesInTag(array_values($tags)[0]?->value ?? null);
     }
 
     public function hasTag(string $name): bool
@@ -114,10 +127,22 @@ class Block
 
         foreach (get_object_vars($tag) as $prop => $value) {
             if ($value instanceof TypeNode) {
-                $tag->$prop = $this->typeResolver->resolve($value);
+                $tag->$prop = $this->typeResolver->resolve($value, $this->getGenericTypes());
             }
         }
 
         return $tag;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function getGenericTypes(): array
+    {
+        return $this->genericTypes
+            ?? ($this->genericTypes = array_merge(
+                $this->inheritedGenericTypes,
+                $this->genericTypesExtractor->extractFromPhpDocNode($this->docNode),
+            ));
     }
 }

@@ -13,6 +13,7 @@ class Factory
     private readonly PhpDocParser\Lexer\Lexer $lexer;
     private readonly PhpDocParser\Parser\PhpDocParser $parser;
     private readonly PhpImports\Resolver $phpImportsResolver;
+    private readonly GenericTypesExtractor $genericTypesExporter;
 
     public static function createInstance(): self
     {
@@ -21,7 +22,8 @@ class Factory
 
     public function __construct()
     {
-        $this->scopeResolver = new ReflectorScopeResolver();
+        $this->genericTypesExporter = new GenericTypesExtractor($this);
+        $this->scopeResolver = new ReflectorScopeResolver($this->genericTypesExporter);
         $this->lexer = new PhpDocParser\Lexer\Lexer();
         $constExprParser = new PhpDocParser\Parser\ConstExprParser();
         $typeParser = new PhpDocParser\Parser\TypeParser($constExprParser);
@@ -39,10 +41,23 @@ class Factory
      * @param null|string $file The file where the comment appeared in.
      * @param null|int $line The (approximate) line where the comment appeared.
      * @param null|class-string $class Fully-qualified name of the class that the comment applies to.
+     * @param list<string> $inheritedGenericTypes List of generic types inherited by, but outside of, the current
+     *                                            scope. For example, from class-level in case of method scope.
      */
-    public function createFromComment(string $comment, ?string $file = null, ?int $line = null, ?string $class = null): Block
-    {
-        return $this->createFromScope(new Scope(file: $file, line: $line, class: $class, comment: $comment));
+    public function createFromComment(
+        string $comment,
+        ?string $file = null,
+        ?int $line = null,
+        ?string $class = null,
+        array $inheritedGenericTypes = [],
+    ): Block {
+        return $this->createFromScope(new Scope(
+            file: $file,
+            line: $line,
+            class: $class,
+            comment: $comment,
+            inheritedGenericTypes: $inheritedGenericTypes,
+        ));
     }
 
     public function createFromScope(Scope $scope): Block
@@ -56,6 +71,8 @@ class Factory
                 ),
             ),
             new TypeResolver($scope, $this->phpImportsResolver),
+            $scope->inheritedGenericTypes,
+            $this->genericTypesExporter,
         );
     }
 }

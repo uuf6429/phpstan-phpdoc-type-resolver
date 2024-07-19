@@ -10,6 +10,8 @@ namespace uuf6429\PHPStanPHPDocTypeResolverTests\Unit;
 use LogicException;
 use PHPStan\PhpDocParser\Ast\ConstExpr\ConstExprIntegerNode;
 use PHPStan\PhpDocParser\Ast\ConstExpr\ConstExprStringNode;
+use PHPStan\PhpDocParser\Ast\PhpDoc\ReturnTagValueNode;
+use PHPStan\PhpDocParser\Ast\PhpDoc\TemplateTagValueNode;
 use PHPStan\PhpDocParser\Ast\Type;
 use PHPStan\PhpDocParser\Parser\ParserException;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -17,14 +19,13 @@ use PHPUnit\Framework\TestCase;
 use Reflector;
 use RuntimeException;
 use SplFileInfo;
-use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\ReflectorScopeResolver;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Factory;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Scope;
 use uuf6429\PHPStanPHPDocTypeResolver\TypeResolver;
 use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\Cases\Case1;
 use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\Cases\Case2;
 use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\Cases\JumpingCaseInterface;
 use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\TypeResolverTestFixture;
-use uuf6429\PHPStanPHPDocTypeResolverTests\ParsesDocBlocksTrait;
 use uuf6429\PHPStanPHPDocTypeResolverTests\ReflectsValuesTrait;
 
 use function uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\getTypeResolverTestClosureReturningImportedType;
@@ -33,19 +34,16 @@ use function uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\getTypeResolverTest
 class TypeResolverTest extends TestCase
 {
     use ReflectsValuesTrait;
-    use ParsesDocBlocksTrait;
 
     #[DataProvider('returnTypeDataProvider')]
     public function testReturnType(Reflector $reflector, ?Type\TypeNode $expectedReturnType): void
     {
-        $scopeResolver = new ReflectorScopeResolver();
-        $scope = $scopeResolver->resolve($reflector);
-        $docBlock = $this->parseDocBlock($scope->comment);
+        $docBlock = Factory::createInstance()->createFromReflector($reflector);
 
-        $typeResolver = new TypeResolver($scope);
-        $actualReturnType = $typeResolver->resolve($docBlock->getReturnTagValues()[0]->type);
+        /** @var ReturnTagValueNode $returnTag */
+        $returnTag = $docBlock->getTag('@return');
 
-        $this->assertEquals($expectedReturnType, $actualReturnType);
+        $this->assertEquals($expectedReturnType, $returnTag->type);
     }
 
     /**
@@ -201,9 +199,21 @@ class TypeResolverTest extends TestCase
             ),
         ];
 
-        // TODO enable this when generics are fully supported
-        /*yield 'return offset of virtual type' => [
-            'reflector' => self::reflectMethod([TypeResolverTestFixture::class, 'returnPredefinedColor']),
+        yield 'generic class creator' => [
+            'reflector' => self::reflectMethod([TypeResolverTestFixture::class, 'createClass']),
+            'expectedReturnType' => new Type\GenericTypeNode(
+                type: new Type\IdentifierTypeNode('new'),
+                genericTypes: [
+                    new Type\IdentifierTypeNode('T'),
+                ],
+                variances: [
+                    'invariant',
+                ],
+            ),
+        ];
+
+        yield 'return offset of virtual type' => [
+            'reflector' => self::reflectMethod([TypeResolverTestFixture::class, 'translateColor']),
             'expectedReturnType' => new Type\UnionTypeNode([
                 new Type\IdentifierTypeNode('null'),
                 new Type\OffsetAccessTypeNode(
@@ -211,33 +221,71 @@ class TypeResolverTest extends TestCase
                     offset: new Type\IdentifierTypeNode('TColors'),
                 ),
             ]),
-        ];*/
+        ];
+
+        yield 'return callable with typed args' => [
+            'reflector' => self::reflectMethod([TypeResolverTestFixture::class, 'returnCallableWithTypedArgs']),
+            'expectedReturnType' => new Type\CallableTypeNode(
+                identifier: new Type\IdentifierTypeNode('callable'),
+                parameters: [
+                    new Type\CallableTypeParameterNode(
+                        type: new Type\IdentifierTypeNode('int'),
+                        isReference: false,
+                        isVariadic: false,
+                        parameterName: '',
+                        isOptional: false,
+                    ),
+                    new Type\CallableTypeParameterNode(
+                        type: new Type\IdentifierTypeNode('bool'),
+                        isReference: false,
+                        isVariadic: false,
+                        parameterName: '$named',
+                        isOptional: false,
+                    ),
+                ],
+                returnType: new Type\IdentifierTypeNode('string'),
+                templateTypes: [],
+            ),
+        ];
+
+        yield 'return callable with templates' => [
+            'reflector' => self::reflectMethod([TypeResolverTestFixture::class, 'returnCallableWithTemplates']),
+            'expectedReturnType' => new Type\CallableTypeNode(
+                identifier: new Type\IdentifierTypeNode('callable'),
+                parameters: [],
+                returnType: new Type\IdentifierTypeNode('T'),
+                templateTypes: [
+                    new TemplateTagValueNode(
+                        name: 'T',
+                        bound: null,
+                        description: '',
+                        default: null,
+                    ),
+                ],
+            ),
+        ];
     }
 
     public function testThatRelativeTypeWithoutClassScopeIsNotAllowed(): void
     {
-        $scope = new Scope(
-            file: null,
-            line: null,
-            class: null,
-            comment: <<<'PHP'
+        $docBlock = Factory::createInstance()
+            ->createFromComment(
+                <<<'PHP'
                 /**
                  * @return $this
                  */
                 PHP,
-        );
-        $docBlock = $this->parseDocBlock($scope->comment);
-        $typeResolver = new TypeResolver($scope);
+            );
 
         $this->expectException(LogicException::class);
         $this->expectExceptionMessage('Cannot resolve `$this`, no class was defined in the current scope');
 
-        $typeResolver->resolve($docBlock->getReturnTagValues()[0]->type);
+        $docBlock->getTag('@return');
     }
 
     public function testThatInvalidTypeIsIgnored(): void
     {
-        $scope = new Scope(null, null, null, '');
+        $scope = new Scope(null, null, null, '', []);
         $typeResolver = new TypeResolver($scope);
         $invalidType = new Type\InvalidTypeNode(new ParserException('', 0, 0, 0));
 
@@ -248,7 +296,7 @@ class TypeResolverTest extends TestCase
 
     public function testThatUnsupportedTypesTriggerException(): void
     {
-        $scope = new Scope(null, null, null, '');
+        $scope = new Scope(null, null, null, '', []);
         $typeResolver = new TypeResolver($scope);
         $unsupportedType = $this->createMock(Type\TypeNode::class);
 

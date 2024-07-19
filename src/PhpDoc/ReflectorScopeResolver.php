@@ -4,12 +4,19 @@ namespace uuf6429\PHPStanPHPDocTypeResolver\PhpDoc;
 
 use InvalidArgumentException;
 use ReflectionClass;
+use ReflectionClassConstant;
 use ReflectionFunction;
 use ReflectionMethod;
 use Reflector;
 
 class ReflectorScopeResolver
 {
+    public function __construct(
+        private readonly GenericTypesExtractor $genericTypesExtractor = new GenericTypesExtractor(new Factory()),
+    ) {
+        //
+    }
+
     public function resolve(Reflector $reflector): Scope
     {
         return match (true) {
@@ -19,14 +26,16 @@ class ReflectorScopeResolver
                 line: $reflector->getStartLine() ?: null,
                 class: $reflector->getName(),
                 comment: $reflector->getDocComment() ?: '',
+                inheritedGenericTypes: [],
             ),
 
-            $reflector instanceof ReflectionMethod
+            $reflector instanceof ReflectionMethod && ($class = $reflector->getDeclaringClass())
             => new Scope(
                 file: $reflector->getFileName() ?: null,
                 line: $reflector->getStartLine() ?: null,
-                class: $reflector->getDeclaringClass()->getName(),
+                class:$class->getName(),
                 comment: $reflector->getDocComment() ?: '',
+                inheritedGenericTypes: $this->genericTypesExtractor->extractFromReflector($class),
             ),
 
             $reflector instanceof ReflectionFunction
@@ -35,6 +44,16 @@ class ReflectorScopeResolver
                 line: $reflector->getStartLine() ?: null,
                 class: ($class = $reflector->getClosureScopeClass()) ? $class->getName() : null,
                 comment: $reflector->getDocComment() ?: '',
+                inheritedGenericTypes: [],
+            ),
+
+            $reflector instanceof ReflectionClassConstant && ($class = $reflector->getDeclaringClass())
+            => new Scope(
+                file: $class->getFileName() ?: null,
+                line: $class->getStartLine() ?: null,
+                class: $class->getName(),
+                comment: $reflector->getDocComment() ?: '',
+                inheritedGenericTypes: $this->genericTypesExtractor->extractFromReflector($class),
             ),
 
             default

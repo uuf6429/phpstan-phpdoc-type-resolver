@@ -73,11 +73,28 @@ abstract class TypeResolverTestFixture
     abstract public function returnRandomInt(): int;
 
     /**
+     * @template T of object
+     * @param class-string<T> $class
+     * @return new<T>
+     */
+    abstract public function createClass(string $class): object;
+
+    /**
      * @template TColorKey of key-of<TColors>
      * @param TColorKey $colorName
      * @return null|TColors[TColorKey]
      */
     abstract public function translateColor(string $colorName): ?string;
+
+    /**
+     * @return callable(int, bool $named): string
+     */
+    abstract public function returnCallableWithTypedArgs(): callable;
+
+    /**
+     * @return callable<T>(): T
+     */
+    abstract public function returnCallableWithTemplates(): callable;
 
     public static function getTypeResolverTestClosureReturningString(): Closure
     {

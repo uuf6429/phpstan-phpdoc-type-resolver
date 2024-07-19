@@ -59,10 +59,21 @@ class ReflectorScopeResolverTest extends TestCase
     public static function reflectorScopeResolverDataProvider(): iterable
     {
         yield 'ReflectionProperty' => [
-            'expectedResult' => null,
-            'expectedException' => new InvalidArgumentException(
-                'Cannot determine scope information for reflector of type ReflectionProperty',
+            'expectedResult' => new Scope(
+                file: dirname(__DIR__) . '/Fixtures/ObjectTestFixture.php',
+                line: 12,
+                class: ObjectTestFixture::class,
+                comment:  <<<'PHP'
+                    /**
+                         * @var 'hello'|'bye'
+                         */
+                    PHP,
+                inheritedGenericTypes: [
+                    'TColors',
+                    'TOtherColors',
+                ],
             ),
+            'expectedException' => null,
             'reflector' => new ReflectionProperty(ObjectTestFixture::class, 'realProperty'),
         ];
 

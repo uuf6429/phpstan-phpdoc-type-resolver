@@ -7,6 +7,7 @@ use ReflectionClass;
 use ReflectionClassConstant;
 use ReflectionFunction;
 use ReflectionMethod;
+use ReflectionProperty;
 use Reflector;
 
 class ReflectorScopeResolver
@@ -48,6 +49,15 @@ class ReflectorScopeResolver
             ),
 
             $reflector instanceof ReflectionClassConstant && ($class = $reflector->getDeclaringClass())
+            => new Scope(
+                file: $class->getFileName() ?: null,
+                line: $class->getStartLine() ?: null,
+                class: $class->getName(),
+                comment: $reflector->getDocComment() ?: '',
+                inheritedGenericTypes: $this->genericTypesExtractor->extractFromReflector($class),
+            ),
+
+            $reflector instanceof ReflectionProperty && ($class = $reflector->getDeclaringClass())
             => new Scope(
                 file: $class->getFileName() ?: null,
                 line: $class->getStartLine() ?: null,

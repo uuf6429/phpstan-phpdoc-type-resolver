@@ -26,6 +26,7 @@ use uuf6429\PHPStanPHPDocTypeResolver\TypeResolver;
 use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\Cases\Case1;
 use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\Cases\Case2;
 use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\Cases\JumpingCaseInterface;
+use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\TypeResolverChildTestFixture;
 use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\TypeResolverTestFixture;
 use uuf6429\PHPStanPHPDocTypeResolverTests\ReflectsValuesTrait;
 
@@ -301,6 +302,11 @@ class TypeResolverTest extends TestCase
                 ],
             ),
         ];
+
+        yield 'return parent class' => [
+            'reflector' => self::reflectMethod([TypeResolverChildTestFixture::class, 'returnParent']),
+            'expectedReturnType' => new Type\IdentifierTypeNode(TypeResolverTestFixture::class),
+        ];
     }
 
     public function testThatRelativeTypeWithoutClassScopeIsNotAllowed(): void
@@ -341,5 +347,23 @@ class TypeResolverTest extends TestCase
         $this->expectExceptionMessage('Cannot resolve related types, type is unsupported: ' . get_class($unsupportedType));
 
         $typeResolver->resolve($unsupportedType);
+    }
+
+    public function testThatParentlessClassCannotResolveParent(): void
+    {
+        $docBlock = Factory::createInstance()
+            ->createFromComment(
+                <<<'PHP'
+                /**
+                 * @return parent
+                 */
+                PHP,
+                class: TypeResolverTestFixture::class,
+            );
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('Class/type `' . TypeResolverTestFixture::class . '` doesn\'t have a parent');
+
+        $docBlock->getTag('@return');
     }
 }

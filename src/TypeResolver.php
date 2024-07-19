@@ -43,7 +43,7 @@ class TypeResolver
         'int-mask', 'int-mask-of',
     ];
 
-    private const RELATIVE_TYPES = ['self', 'static', '$this'];
+    private const RELATIVE_TYPES = ['self', 'static', '$this', 'parent'];
 
     private const RANGE_TYPES =  ['int'];
 
@@ -307,6 +307,12 @@ class TypeResolver
 
         if ($this->scope->class === null) {
             throw new LogicException("Cannot resolve `$symbol`, no class was defined in the current scope");
+        }
+
+        if ($symbol === 'parent') {
+            $parent = get_parent_class($this->scope->class);
+            return $parent
+                ?: throw new LogicException("Class/type `{$this->scope->class}` doesn't have a parent");
         }
 
         return $this->scope->class;

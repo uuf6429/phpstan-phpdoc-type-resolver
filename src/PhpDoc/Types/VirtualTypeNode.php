@@ -1,6 +1,6 @@
 <?php
 
-namespace uuf6429\PHPStanPHPDocTypeResolver\PhpDoc;
+namespace uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types;
 
 use PHPStan\PhpDocParser\Ast\NodeAttributes;
 use PHPStan\PhpDocParser\Ast\Type\TypeNode;

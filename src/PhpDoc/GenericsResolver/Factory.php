@@ -14,7 +14,7 @@ use ReflectionMethod;
 use Reflector;
 use RuntimeException;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Factory as PhpDocFactory;
-use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\VirtualTypeNode;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\VirtualTypeNode;
 
 class Factory
 {

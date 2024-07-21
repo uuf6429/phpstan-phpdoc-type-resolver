@@ -12,9 +12,10 @@ use RuntimeException;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Factory as PhpDocFactory;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Factory as GenericsResolverFactory;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Resolver as GenericsResolver;
-use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericTypeNodes;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Scope;
-use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\VirtualTypeNode;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\ConcreteGenericTypeNode;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\TemplateGenericTypeNode;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\VirtualTypeNode;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpImports\Resolver as PhpImportsResolver;
 
 /**
@@ -277,7 +278,7 @@ class TypeResolver
             : $this->resolveGenericClassType($orig, $genericResolver);
     }
 
-    private function resolveGenericVirtualType(Type\GenericTypeNode $orig, GenericsResolver $genericResolver): GenericTypeNodes\Template|GenericTypeNodes\Concrete
+    private function resolveGenericVirtualType(Type\GenericTypeNode $orig, GenericsResolver $genericResolver): TemplateGenericTypeNode|ConcreteGenericTypeNode
     {
         $isIntRange = $orig->type instanceof Type\IdentifierTypeNode && in_array($orig->type->name, self::RANGE_TYPES);
         $isGenericUtilityType = $orig->type instanceof Type\IdentifierTypeNode && in_array($orig->type->name, self::GENERIC_UTILITY_TYPES);
@@ -290,19 +291,19 @@ class TypeResolver
         );
 
         return $genericResolver->hasMappedTemplateType()
-            ? new GenericTypeNodes\Template(
+            ? new TemplateGenericTypeNode(
                 type: $convertedType,
                 genericTypes: $convertedGenericTypes,
                 variances: $orig->variances,
             )
-            : new GenericTypeNodes\Concrete(
+            : new ConcreteGenericTypeNode(
                 type: $convertedType,
                 genericTypes: $convertedGenericTypes,
                 variances: $orig->variances,
             );
     }
 
-    private function resolveGenericClassType(Type\GenericTypeNode $orig, GenericsResolver $genericResolver): Type\GenericTypeNode
+    private function resolveGenericClassType(Type\GenericTypeNode $orig, GenericsResolver $genericResolver): TemplateGenericTypeNode|ConcreteGenericTypeNode
     {
         $isGenericUtilityType = $orig->type instanceof Type\IdentifierTypeNode && in_array($orig->type->name, self::GENERIC_UTILITY_TYPES);
         $convertedType = $isGenericUtilityType ? $orig->type : $this->resolveType($orig->type, $genericResolver, Type\IdentifierTypeNode::class, false);
@@ -325,12 +326,12 @@ class TypeResolver
         );
 
         return $genericResolver->hasMappedTemplateType()
-            ? new GenericTypeNodes\Template(
+            ? new TemplateGenericTypeNode(
                 type: $convertedType,
                 genericTypes: $convertedGenericTypes,
                 variances: $orig->variances,
             )
-            : new GenericTypeNodes\Concrete(
+            : new ConcreteGenericTypeNode(
                 type: $convertedType,
                 genericTypes: $convertedGenericTypes,
                 variances: $orig->variances,

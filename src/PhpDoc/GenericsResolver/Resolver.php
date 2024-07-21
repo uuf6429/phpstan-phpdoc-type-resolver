@@ -2,7 +2,7 @@
 
 namespace uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver;
 
-use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\VirtualTypeNode;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\VirtualTypeNode;
 
 class Resolver
 {

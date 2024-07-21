@@ -32,6 +32,14 @@ In principle the resolver needs two things:
 
 There are two ways to retrieve that information, as shown below.
 
+**Important:** The resolver will always convert some specific PHPStan types into something else as follows:
+- *`ThisTypeNode` is converted into `IdentifierTypeNode` for the currently-passed class.
+- *`GenericTypeNode` to either `GenericTypeNodes\Concrete` or `GenericTypeNodes\Template` based on if the received
+   instance contains unresolved generic/template types. Note that these two types are custom (from this library).
+
+(*) conversion is mandatory, failures will trigger some sort of exception (meaning: the original type _should_ never be
+returned).
+
 ### 😎 Via Reflection
 
 Let's assume we have a `\My\Project\Greeter` class with a `greet` method, here's how we can resolve that method's

@@ -15,13 +15,16 @@ use ReflectionObject;
 use ReflectionParameter;
 use ReflectionProperty;
 use Reflector;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Resolver;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\ResolverRefState;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\ResolverValueState;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\ReflectorScopeResolver;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Scope;
 use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\AttributeTestFixture;
-use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\IntegerEnumTestFixture;
+use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\IntegerEnum;
 use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\ObjectTestFixture;
-use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\PlainEnumTestFixture;
-use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\StringEnumTestFixture;
+use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\PlainEnum;
+use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\StringEnum;
 use uuf6429\PHPStanPHPDocTypeResolverTests\ReflectsValuesTrait;
 
 use function uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\getFunctionWithParameter;
@@ -68,10 +71,12 @@ class ReflectorScopeResolverTest extends TestCase
                          * @var 'hello'|'bye'
                          */
                     PHP,
-                inheritedGenericTypes: [
-                    'TColors',
-                    'TOtherColors',
-                ],
+                genericsResolver: new Resolver(
+                    state: new ResolverRefState([
+                        new ResolverValueState(true),
+                        new ResolverValueState(true),
+                    ]),
+                ),
             ),
             'expectedException' => null,
             'reflector' => new ReflectionProperty(ObjectTestFixture::class, 'realProperty'),
@@ -97,7 +102,6 @@ class ReflectorScopeResolverTest extends TestCase
                      * @phpstan-import-type TColors from TypeResolverTestFixture as TOtherColors
                      */
                     PHP,
-                inheritedGenericTypes: [],
             ),
             'expectedException' => null,
             'reflector' => new ReflectionClass(ObjectTestFixture::class),
@@ -115,7 +119,6 @@ class ReflectorScopeResolverTest extends TestCase
                      * @phpstan-import-type TColors from TypeResolverTestFixture as TOtherColors
                      */
                     PHP,
-                inheritedGenericTypes: [],
             ),
             'expectedException' => null,
             'reflector' => new ReflectionObject(new ObjectTestFixture('hello')),
@@ -123,38 +126,47 @@ class ReflectorScopeResolverTest extends TestCase
 
         yield 'ReflectionEnum' => [
             'expectedResult' => new Scope(
-                file: dirname(__DIR__) . '/Fixtures/IntegerEnumTestFixture.php',
+                file: dirname(__DIR__) . '/Fixtures/IntegerEnum.php',
                 line: 5,
-                class: IntegerEnumTestFixture::class,
+                class: IntegerEnum::class,
                 comment: '',
-                inheritedGenericTypes: [],
             ),
             'expectedException' => null,
-            'reflector' => new ReflectionEnum(IntegerEnumTestFixture::class),
+            'reflector' => new ReflectionEnum(IntegerEnum::class),
         ];
 
         yield 'ReflectionEnumUnitCase' => [
             'expectedResult' => new Scope(
-                file: dirname(__DIR__) . '/Fixtures/PlainEnumTestFixture.php',
+                file: dirname(__DIR__) . '/Fixtures/PlainEnum.php',
                 line: 5,
-                class: PlainEnumTestFixture::class,
+                class: PlainEnum::class,
                 comment: '',
-                inheritedGenericTypes: [],
+                genericsResolver: new Resolver(
+                    state: new ResolverRefState([
+                        new ResolverValueState(true),
+                        new ResolverValueState(true),
+                    ]),
+                ),
             ),
             'expectedException' => null,
-            'reflector' => (new ReflectionEnum(PlainEnumTestFixture::class))->getCase('Case1'),
+            'reflector' => (new ReflectionEnum(PlainEnum::class))->getCase('Case1'),
         ];
 
         yield 'ReflectionEnumBackedCase' => [
             'expectedResult' => new Scope(
-                file: dirname(__DIR__) . '/Fixtures/StringEnumTestFixture.php',
+                file: dirname(__DIR__) . '/Fixtures/StringEnum.php',
                 line: 5,
-                class: StringEnumTestFixture::class,
+                class: StringEnum::class,
                 comment: '',
-                inheritedGenericTypes: [],
+                genericsResolver: new Resolver(
+                    state: new ResolverRefState([
+                        new ResolverValueState(true),
+                        new ResolverValueState(true),
+                    ]),
+                ),
             ),
             'expectedException' => null,
-            'reflector' => (new ReflectionEnum(StringEnumTestFixture::class))->getCase('Case1'),
+            'reflector' => (new ReflectionEnum(StringEnum::class))->getCase('Case1'),
         ];
         /*
         yield 'ReflectionExtension' => [
@@ -175,10 +187,12 @@ class ReflectorScopeResolverTest extends TestCase
                 line: 12,
                 class: ObjectTestFixture::class,
                 comment: '',
-                inheritedGenericTypes: [
-                    'TColors',
-                    'TOtherColors',
-                ],
+                genericsResolver: new Resolver(
+                    state: new ResolverRefState([
+                        new ResolverValueState(true),
+                        new ResolverValueState(true),
+                    ]),
+                ),
             ),
             'expectedException' => null,
             'reflector' => new ReflectionClassConstant(ObjectTestFixture::class, 'TEST'),
@@ -199,10 +213,12 @@ class ReflectorScopeResolverTest extends TestCase
                          * @param string|Stringable $name
                          */
                     PHP,
-                inheritedGenericTypes: [
-                    'TColors',
-                    'TOtherColors',
-                ],
+                genericsResolver: new Resolver(
+                    state: new ResolverRefState([
+                        new ResolverValueState(true),
+                        new ResolverValueState(true),
+                    ]),
+                ),
             ),
             'expectedException' => null,
             'reflector' => self::reflectMethod([ObjectTestFixture::class, 'greet']),
@@ -218,7 +234,6 @@ class ReflectorScopeResolverTest extends TestCase
                      * @param 'hello'|'bye' $greeting
                      */
                     PHP,
-                inheritedGenericTypes: [],
             ),
             'expectedException' => null,
             'reflector' => self::reflectFunction(getFunctionWithParameter()),

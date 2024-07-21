@@ -21,13 +21,11 @@ use Reflector;
 use RuntimeException;
 use SplFileInfo;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Factory;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericTypeNodes;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Scope;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\VirtualTypeNode;
 use uuf6429\PHPStanPHPDocTypeResolver\TypeResolver;
-use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\Cases\Case1;
-use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\Cases\Case2;
-use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\Cases\JumpingCaseInterface;
-use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\TypeResolverChildTestFixture;
-use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\TypeResolverTestFixture;
+use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures;
 use uuf6429\PHPStanPHPDocTypeResolverTests\ReflectsValuesTrait;
 
 use function uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\getTypeResolverTestClosureReturningImportedType;
@@ -54,19 +52,19 @@ class TypeResolverTest extends TestCase
     public static function returnTypeDataProvider(): iterable
     {
         yield 'return void' => [
-            'reflector' => self::reflectMethod([TypeResolverTestFixture::class, 'returnVoid']),
+            'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnVoid']),
             'expectedReturnType' => new Type\IdentifierTypeNode('void'),
         ];
 
         yield 'return nullable string' => [
-            'reflector' => self::reflectMethod([TypeResolverTestFixture::class, 'returnNullableString']),
+            'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnNullableString']),
             'expectedReturnType' => new Type\NullableTypeNode(
                 new Type\IdentifierTypeNode('string'),
             ),
         ];
 
         yield 'return boolean or integer' => [
-            'reflector' => self::reflectMethod([TypeResolverTestFixture::class, 'returnBoolOrInteger']),
+            'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnBoolOrInteger']),
             'expectedReturnType' => new Type\UnionTypeNode([
                 new Type\IdentifierTypeNode('bool'),
                 new Type\IdentifierTypeNode('integer'),
@@ -74,31 +72,31 @@ class TypeResolverTest extends TestCase
         ];
 
         yield 'return namespaced class relative to current namespace' => [
-            'reflector' => self::reflectMethod([TypeResolverTestFixture::class, 'returnImplicitNamespaceClass']),
-            'expectedReturnType' => new Type\IdentifierTypeNode(Case1::class),
+            'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnImplicitNamespaceClass']),
+            'expectedReturnType' => new Type\IdentifierTypeNode(Fixtures\Cases\Case1::class),
         ];
 
         yield 'return grouped namespace import' => [
-            'reflector' => self::reflectMethod([TypeResolverTestFixture::class, 'returnImportedGroupedNamespaceClass']),
+            'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnImportedGroupedNamespaceClass']),
             'expectedReturnType' => new Type\UnionTypeNode([
-                new Type\IdentifierTypeNode(Case1::class),
-                new Type\IdentifierTypeNode(Case2::class),
+                new Type\IdentifierTypeNode(Fixtures\Cases\Case1::class),
+                new Type\IdentifierTypeNode(Fixtures\Cases\Case2::class),
             ]),
         ];
 
         yield 'return self' => [
-            'reflector' => self::reflectMethod([TypeResolverTestFixture::class, 'returnSelf']),
-            'expectedReturnType' => new Type\IdentifierTypeNode(TypeResolverTestFixture::class),
+            'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnSelf']),
+            'expectedReturnType' => new Type\IdentifierTypeNode(Fixtures\TypeResolverTestFixture::class),
         ];
 
         yield 'return static' => [
-            'reflector' => self::reflectMethod([TypeResolverTestFixture::class, 'returnStatic']),
-            'expectedReturnType' => new Type\IdentifierTypeNode(TypeResolverTestFixture::class),
+            'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnStatic']),
+            'expectedReturnType' => new Type\IdentifierTypeNode(Fixtures\TypeResolverTestFixture::class),
         ];
 
         yield 'return this' => [
-            'reflector' => self::reflectMethod([TypeResolverTestFixture::class, 'returnThis']),
-            'expectedReturnType' => new Type\IdentifierTypeNode(TypeResolverTestFixture::class),
+            'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnThis']),
+            'expectedReturnType' => new Type\IdentifierTypeNode(Fixtures\TypeResolverTestFixture::class),
         ];
 
         yield 'return string from function' => [
@@ -126,20 +124,20 @@ class TypeResolverTest extends TestCase
         ];
 
         yield 'return string from closure from method' => [
-            'reflector' => self::reflectFunction(TypeResolverTestFixture::getTypeResolverTestClosureReturningString()),
+            'reflector' => self::reflectFunction(Fixtures\TypeResolverTestFixture::getTypeResolverTestClosureReturningString()),
             'expectedReturnType' => new Type\IdentifierTypeNode('string'),
         ];
 
         yield 'return cases grouped by string key' => [
-            'reflector' => self::reflectMethod([TypeResolverTestFixture::class, 'returnArrayOfGroupedCases']),
+            'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnArrayOfGroupedCases']),
             'expectedReturnType' => new Type\ArrayShapeNode([
                 new Type\ArrayShapeItemNode(
                     keyName: new ConstExprIntegerNode('1'),
                     optional: false,
-                    valueType: new Type\GenericTypeNode(
+                    valueType: new GenericTypeNodes\Concrete(
                         type: new Type\IdentifierTypeNode('list'),
                         genericTypes: [
-                            new Type\IdentifierTypeNode(Case1::class),
+                            new Type\IdentifierTypeNode(Fixtures\Cases\Case1::class),
                         ],
                         variances: [
                             'invariant',
@@ -150,14 +148,14 @@ class TypeResolverTest extends TestCase
                     keyName: new ConstExprIntegerNode('2'),
                     optional: true,
                     valueType: new Type\ArrayTypeNode(
-                        type: new Type\IdentifierTypeNode(Case2::class),
+                        type: new Type\IdentifierTypeNode(Fixtures\Cases\Case2::class),
                     ),
                 ),
             ]),
         ];
 
         yield 'return cases wrapped in object' => [
-            'reflector' => self::reflectMethod([TypeResolverTestFixture::class, 'returnCasesJumpingWrappedInObject']),
+            'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnCasesJumpingWrappedInObject']),
             'expectedReturnType' => new Type\ObjectShapeNode([
                 new Type\ObjectShapeItemNode(
                     keyName: new ConstExprStringNode('jumpingCases'),
@@ -166,8 +164,8 @@ class TypeResolverTest extends TestCase
                         new Type\IdentifierTypeNode('null'),
                         new Type\ArrayTypeNode(
                             type: new Type\IntersectionTypeNode([
-                                new Type\IdentifierTypeNode(Case1::class),
-                                new Type\IdentifierTypeNode(JumpingCaseInterface::class),
+                                new Type\IdentifierTypeNode(Fixtures\Cases\Case1::class),
+                                new Type\IdentifierTypeNode(Fixtures\Cases\JumpingCaseInterface::class),
                             ]),
                         ),
                     ]),
@@ -176,7 +174,7 @@ class TypeResolverTest extends TestCase
         ];
 
         yield 'return callable or string conditionally' => [
-            'reflector' => self::reflectMethod([TypeResolverTestFixture::class, 'returnCallableOrTextConditionally']),
+            'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnCallableOrTextConditionally']),
             'expectedReturnType' => new Type\ConditionalTypeForParameterNode(
                 parameterName: '$cond',
                 targetType: new Type\IdentifierTypeNode('true'),
@@ -187,8 +185,8 @@ class TypeResolverTest extends TestCase
         ];
 
         yield 'return int range' => [
-            'reflector' => self::reflectMethod([TypeResolverTestFixture::class, 'returnRandomInt']),
-            'expectedReturnType' => new Type\GenericTypeNode(
+            'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnRandomInt']),
+            'expectedReturnType' => new GenericTypeNodes\Concrete(
                 type: new Type\IdentifierTypeNode('int'),
                 genericTypes: [
                     new Type\ConstTypeNode(new ConstExprIntegerNode('0')),
@@ -202,8 +200,8 @@ class TypeResolverTest extends TestCase
         ];
 
         yield 'generic class creator' => [
-            'reflector' => self::reflectMethod([TypeResolverTestFixture::class, 'createClass']),
-            'expectedReturnType' => new Type\GenericTypeNode(
+            'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'createClass']),
+            'expectedReturnType' => new GenericTypeNodes\Template(
                 type: new Type\IdentifierTypeNode('new'),
                 genericTypes: [
                     new Type\IdentifierTypeNode('T'),
@@ -215,18 +213,42 @@ class TypeResolverTest extends TestCase
         ];
 
         yield 'return offset of virtual type' => [
-            'reflector' => self::reflectMethod([TypeResolverTestFixture::class, 'translateColor']),
+            'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'translateColor']),
             'expectedReturnType' => new Type\UnionTypeNode([
                 new Type\IdentifierTypeNode('null'),
                 new Type\OffsetAccessTypeNode(
                     type: new Type\IdentifierTypeNode('TColorKey'),
-                    offset: new Type\IdentifierTypeNode('TColors'),
+                    offset: new VirtualTypeNode(
+                        name: 'TColors',
+                        type: new Type\ArrayShapeNode(
+                            items: [
+                                new Type\ArrayShapeItemNode(
+                                    keyName: new Type\IdentifierTypeNode('red'),
+                                    optional: false,
+                                    valueType: new Type\ConstTypeNode(constExpr: new ConstExprStringNode('#F00')),
+                                ),
+                                new Type\ArrayShapeItemNode(
+                                    keyName: new Type\IdentifierTypeNode('green'),
+                                    optional: false,
+                                    valueType: new Type\ConstTypeNode(constExpr: new ConstExprStringNode('#0F0')),
+                                ),
+                                new Type\ArrayShapeItemNode(
+                                    keyName: new Type\IdentifierTypeNode('blue'),
+                                    optional: false,
+                                    valueType: new Type\ConstTypeNode(constExpr: new ConstExprStringNode('#00F')),
+                                ),
+                            ],
+                            sealed: true,
+                            kind: 'array',
+                        ),
+                        declaringClass: Fixtures\TypeResolverTestFixture::class,
+                    ),
                 ),
             ]),
         ];
 
         yield 'return callable with typed args' => [
-            'reflector' => self::reflectMethod([TypeResolverTestFixture::class, 'returnCallableWithTypedArgs']),
+            'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnCallableWithTypedArgs']),
             'expectedReturnType' => new Type\CallableTypeNode(
                 identifier: new Type\IdentifierTypeNode('callable'),
                 parameters: [
@@ -251,7 +273,7 @@ class TypeResolverTest extends TestCase
         ];
 
         yield 'return callable with templates' => [
-            'reflector' => self::reflectMethod([TypeResolverTestFixture::class, 'returnCallableWithTemplates']),
+            'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnCallableWithTemplates']),
             'expectedReturnType' => new Type\CallableTypeNode(
                 identifier: new Type\IdentifierTypeNode('callable'),
                 parameters: [],
@@ -268,17 +290,17 @@ class TypeResolverTest extends TestCase
         ];
 
         yield 'return a class constant' => [
-            'reflector' => self::reflectMethod([TypeResolverTestFixture::class, 'returnOneClassConstant']),
+            'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnOneClassConstant']),
             'expectedReturnType' => new Type\UnionTypeNode([
                 new Type\ConstTypeNode(
                     constExpr: new ConstFetchNode(
-                        className: TypeResolverTestFixture::class,
+                        className: Fixtures\TypeResolverTestFixture::class,
                         name: 'TYPE_A',
                     ),
                 ),
                 new Type\ConstTypeNode(
                     constExpr: new ConstFetchNode(
-                        className: TypeResolverTestFixture::class,
+                        className: Fixtures\TypeResolverTestFixture::class,
                         name: 'TYPE_B',
                     ),
                 ),
@@ -286,13 +308,13 @@ class TypeResolverTest extends TestCase
         ];
 
         yield 'return all class constants' => [
-            'reflector' => self::reflectMethod([TypeResolverTestFixture::class, 'returnAllClassConstants']),
-            'expectedReturnType' => new Type\GenericTypeNode(
+            'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnAllClassConstants']),
+            'expectedReturnType' => new GenericTypeNodes\Concrete(
                 type: new Type\IdentifierTypeNode('list'),
                 genericTypes: [
                     new Type\ConstTypeNode(
                         constExpr: new ConstFetchNode(
-                            className: TypeResolverTestFixture::class,
+                            className: Fixtures\TypeResolverTestFixture::class,
                             name: 'TYPE_*',
                         ),
                     ),
@@ -304,8 +326,42 @@ class TypeResolverTest extends TestCase
         ];
 
         yield 'return parent class' => [
-            'reflector' => self::reflectMethod([TypeResolverChildTestFixture::class, 'returnParent']),
-            'expectedReturnType' => new Type\IdentifierTypeNode(TypeResolverTestFixture::class),
+            'reflector' => self::reflectMethod([Fixtures\TypeResolverChildTestFixture::class, 'returnParent']),
+            'expectedReturnType' => new Type\IdentifierTypeNode(Fixtures\TypeResolverTestFixture::class),
+        ];
+
+        yield 'return Payload<Number>' => [
+            'reflector' => self::reflectMethod([Fixtures\Payload::class, 'makeNumberPayload']),
+            'expectedReturnType' => new GenericTypeNodes\Concrete(
+                type: new Type\IdentifierTypeNode(Fixtures\Payload::class),
+                genericTypes: [
+                    new Type\IdentifierTypeNode(Fixtures\Number::class),
+                ],
+                variances: [
+                    'invariant',
+                ],
+            ),
+        ];
+
+        yield 'return Payload<Payload<T>>' => [
+            'reflector' => self::reflectMethod([Fixtures\Payload::class, 'makePayloadPayload']),
+            'expectedReturnType' => new GenericTypeNodes\Template(
+                type: new Type\IdentifierTypeNode(Fixtures\Payload::class),
+                genericTypes: [
+                    new GenericTypeNodes\Template(
+                        type: new Type\IdentifierTypeNode(Fixtures\Payload::class),
+                        genericTypes: [
+                            new Type\IdentifierTypeNode('T'),
+                        ],
+                        variances: [
+                            'invariant',
+                        ],
+                    ),
+                ],
+                variances: [
+                    'invariant',
+                ],
+            ),
         ];
     }
 
@@ -328,7 +384,7 @@ class TypeResolverTest extends TestCase
 
     public function testThatInvalidTypeIsIgnored(): void
     {
-        $scope = new Scope(null, null, null, '', []);
+        $scope = new Scope(null, null, null, '');
         $typeResolver = new TypeResolver($scope);
         $invalidType = new Type\InvalidTypeNode(new ParserException('', 0, 0, 0));
 
@@ -339,7 +395,7 @@ class TypeResolverTest extends TestCase
 
     public function testThatUnsupportedTypesTriggerException(): void
     {
-        $scope = new Scope(null, null, null, '', []);
+        $scope = new Scope(null, null, null, '');
         $typeResolver = new TypeResolver($scope);
         $unsupportedType = $this->createMock(Type\TypeNode::class);
 
@@ -358,11 +414,11 @@ class TypeResolverTest extends TestCase
                  * @return parent
                  */
                 PHP,
-                class: TypeResolverTestFixture::class,
+                class: Fixtures\TypeResolverTestFixture::class,
             );
 
         $this->expectException(LogicException::class);
-        $this->expectExceptionMessage('Class/type `' . TypeResolverTestFixture::class . '` doesn\'t have a parent');
+        $this->expectExceptionMessage('Class/type `' . Fixtures\TypeResolverTestFixture::class . '` doesn\'t have a parent');
 
         $docBlock->getTag('@return');
     }

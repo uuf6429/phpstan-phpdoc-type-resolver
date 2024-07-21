@@ -7,6 +7,8 @@ use PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocTagNode;
 use PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocTagValueNode;
 use PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocTextNode;
 use PHPStan\PhpDocParser\Ast\Type\TypeNode;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Factory;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Resolver;
 use uuf6429\PHPStanPHPDocTypeResolver\TypeResolver;
 
 /**
@@ -14,19 +16,17 @@ use uuf6429\PHPStanPHPDocTypeResolver\TypeResolver;
  */
 class Block
 {
-    /**
-     * @var null|list<string>
-     */
-    private null|array $genericTypes = null;
+    private null|Resolver $genericTypes = null;
 
     /**
-     * @param list<string> $inheritedGenericTypes
+     * @param null|class-string $currentClass
      */
     public function __construct(
         private readonly PhpDocNode   $docNode,
         private readonly TypeResolver $typeResolver,
-        private readonly array $inheritedGenericTypes,
-        private readonly GenericTypesExtractor $genericTypesExtractor,
+        private readonly Resolver     $genericsResolver,
+        private readonly Factory      $genericTypesExtractor,
+        private readonly ?string      $currentClass,
     ) {
         //
     }
@@ -127,22 +127,21 @@ class Block
 
         foreach (get_object_vars($tag) as $prop => $value) {
             if ($value instanceof TypeNode) {
-                $tag->$prop = $this->typeResolver->resolve($value, $this->getGenericTypes());
+                $tag->$prop = $this->typeResolver->resolve($value, $this->getGenericResolver());
             }
         }
 
         return $tag;
     }
 
-    /**
-     * @return list<string>
-     */
-    public function getGenericTypes(): array
+    public function getGenericResolver(): Resolver
     {
         return $this->genericTypes
-            ?? ($this->genericTypes = array_merge(
-                $this->inheritedGenericTypes,
-                $this->genericTypesExtractor->extractFromPhpDocNode($this->docNode),
-            ));
+            ?? (
+                $this->genericTypes = Resolver::createMerged(
+                    $this->genericsResolver,
+                    $this->genericTypesExtractor->extractFromPhpDocNode($this->docNode, $this->currentClass),
+                )
+            );
     }
 }

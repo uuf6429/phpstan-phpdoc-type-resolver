@@ -3,14 +3,14 @@
 namespace uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures;
 
 /**
- * @template T of object
+ * @template T
  */
 abstract class Payload
 {
     /**
      * @var T
      */
-    protected object $data;
+    protected $data;
 
     /**
      * @return Payload<Number>
@@ -26,5 +26,5 @@ abstract class Payload
     /**
      * @return T
      */
-    abstract public function getData(): object;
+    abstract public function getData(): mixed;
 }

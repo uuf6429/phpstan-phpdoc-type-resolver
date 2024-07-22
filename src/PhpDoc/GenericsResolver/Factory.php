@@ -50,7 +50,7 @@ class Factory
 
     private function makeCacheKey(Reflector $reflector): ?string
     {
-        return match(true) {
+        return match (true) {
             $reflector instanceof ReflectionClass
             => $reflector->getName(),
 
@@ -66,7 +66,7 @@ class Factory
     }
 
     /**
-     * @return iterable<string, string>
+     * @return iterable<string, IdentifierTypeNode>
      */
     private function extractFromTemplateTags(PhpDocNode $docNode): iterable
     {
@@ -76,7 +76,7 @@ class Factory
             $docNode->getTagsByName('@phpstan-template'),
         );
         foreach ($tags as $tag) {
-            yield $tag->value->name => $tag->value->name;
+            yield $tag->value->name => new IdentifierTypeNode((string)($tag->value->bound ?? $tag->value->name));
         }
     }
 

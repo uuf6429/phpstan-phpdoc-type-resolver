@@ -7,10 +7,8 @@ use PHPStan\PhpDocParser\Ast\ConstExpr;
 use PHPStan\PhpDocParser\Ast\PhpDoc;
 use PHPStan\PhpDocParser\Ast\Type;
 use PHPStan\PhpDocParser\Ast\Type\CallableTypeParameterNode;
-use ReflectionClass;
 use RuntimeException;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Factory as PhpDocFactory;
-use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Factory as GenericsResolverFactory;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Resolver as GenericsResolver;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Scope;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\ConcreteGenericTypeNode;
@@ -60,7 +58,6 @@ class TypeResolver
     public function __construct(
         private readonly Scope    $scope,
         private readonly PhpImportsResolver $importsResolver = new PhpImportsResolver(),
-        private readonly GenericsResolverFactory $genericsResolverFactory = new GenericsResolverFactory(new PhpDocFactory()),
     ) {
         //
     }
@@ -80,7 +77,7 @@ class TypeResolver
         $constExpr = $orig instanceof Type\ConstTypeNode ? $orig->constExpr : null;
         if ($orig instanceof Type\CallableTypeNode) {
             foreach ($orig->templateTypes as $templateType) {
-                $genericResolver->setTemplateType($templateType->name, $templateType->name); // TODO what if name is actually not a template type?
+                $genericResolver->setTemplateType($templateType->name, new Type\IdentifierTypeNode($templateType->name)); // TODO what if name is actually not a template type?
             }
         }
 
@@ -308,22 +305,16 @@ class TypeResolver
         $isGenericUtilityType = $orig->type instanceof Type\IdentifierTypeNode && in_array($orig->type->name, self::GENERIC_UTILITY_TYPES);
         $convertedType = $isGenericUtilityType ? $orig->type : $this->resolveType($orig->type, $genericResolver, Type\IdentifierTypeNode::class, false);
 
-        if (!$isGenericUtilityType) {
-            $reflector = new ReflectionClass(
-                class_exists($convertedType->name)
-                    ? $convertedType->name
-                    : throw new RuntimeException("The `$orig->type` type cannot be resolved to a real class"),
-            );
-            $genericResolver = GenericsResolver::createCombined(
-                $this->genericsResolverFactory->extractFromReflector($reflector),
-                $genericResolver,
-            );
-        }
-
         $convertedGenericTypes = array_map(
             fn(Type\TypeNode $item): Type\TypeNode => $this->resolveType($item, $genericResolver, Type\TypeNode::class, false),
             $orig->genericTypes,
         );
+
+        if (!$isGenericUtilityType) {
+            foreach ($convertedGenericTypes as $i => $type) {
+                $genericResolver->setTemplateTypeAt($i, $type);
+            }
+        }
 
         return $genericResolver->hasMappedTemplateType()
             ? new TemplateGenericTypeNode(
@@ -338,7 +329,7 @@ class TypeResolver
             );
     }
 
-    private function resolveIdentifier(string $symbol, GenericsResolver $genericResolver): Type\IdentifierTypeNode|VirtualTypeNode
+    private function resolveIdentifier(string $symbol, GenericsResolver $genericResolver): Type\TypeNode
     {
         $result = $this->resolveVirtualOrGenericTypes($symbol, $genericResolver)
             ?? $this->resolveRelativeTypes($symbol)
@@ -354,7 +345,7 @@ class TypeResolver
         return $result;
     }
 
-    private function resolveVirtualOrGenericTypes(string $symbol, GenericsResolver $genericResolver): null|string|VirtualTypeNode
+    private function resolveVirtualOrGenericTypes(string $symbol, GenericsResolver $genericResolver): null|Type\TypeNode
     {
         return $genericResolver->map($symbol);
     }

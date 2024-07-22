@@ -18,8 +18,11 @@ class VirtualTypeNode implements TypeNode
         //
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function __toString(): string
     {
-        throw new RuntimeException('Converting a VirtualTypeNode to a string is not supported at the moment');
+        return (string)$this->type;
     }
 }

@@ -2,14 +2,14 @@
 
 namespace uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver;
 
-use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\VirtualTypeNode;
+use PHPStan\PhpDocParser\Ast\Type\TypeNode;
 
 class Resolver
 {
     /**
-     * @param array<string, string> $templateTypesMap A map of <template type> => <concrete type> entries.
-     * @param array<string, VirtualTypeNode> $definedTypesMap A map of <template type> => <concrete type> entries.
-     * @param array<string, VirtualTypeNode> $importedTypesMap A map of <template type> => <concrete type> entries.
+     * @param array<string, TypeNode> $templateTypesMap A map of <template type> => <concrete type> entries.
+     * @param array<string, TypeNode> $definedTypesMap A map of <template type> => <concrete type> entries.
+     * @param array<string, TypeNode> $importedTypesMap A map of <template type> => <concrete type> entries.
      */
     public function __construct(
         private array $templateTypesMap = [],
@@ -20,23 +20,28 @@ class Resolver
         //
     }
 
-    public function setTemplateType(string $template, string $concrete): void
+    public function setTemplateType(string $template, TypeNode $concrete): void
     {
         $this->templateTypesMap[$template] = $concrete;
+    }
+
+    public function setTemplateTypeAt(int $index, TypeNode $concrete): void
+    {
+        $this->setTemplateType(array_keys($this->templateTypesMap)[$index], $concrete);
     }
 
     /**
      * Maps a template type to a concrete type, if possible.
      * Otherwise, returns the original template type if it's a known template type, or null if it isn't.
      */
-    public function map(string $template): null|string|VirtualTypeNode
+    public function map(string $template): null|TypeNode
     {
         $result = $this->templateTypesMap[$template]
             ?? $this->definedTypesMap[$template]
             ?? $this->importedTypesMap[$template]
             ?? null;
 
-        if ($result === $template) {
+        if ((string)$result === $template) {
             $this->state->setConcrete(false);
         }
 
@@ -58,16 +63,6 @@ class Resolver
             array_merge($first->definedTypesMap, $second->definedTypesMap),
             array_merge($first->definedTypesMap, $second->definedTypesMap),
             new ResolverRefState([$first->state, $second->state]),
-        );
-    }
-
-    public static function createCombined(Resolver $keys, Resolver $values): self
-    {
-        return new self(
-            array_combine(array_keys($keys->templateTypesMap), array_values($values->templateTypesMap)),
-            array_combine(array_keys($keys->definedTypesMap), array_values($values->definedTypesMap)),
-            array_combine(array_keys($keys->importedTypesMap), array_values($values->importedTypesMap)),
-            $values->state,
         );
     }
 }

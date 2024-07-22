@@ -35,7 +35,7 @@ class File
             return null;
         }
 
-        foreach($this->blocks as $block) {
+        foreach ($this->blocks as $block) {
             if ($line < $block->startLine) {
                 return null;
             }

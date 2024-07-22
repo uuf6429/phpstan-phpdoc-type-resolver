@@ -21,8 +21,9 @@ use Reflector;
 use RuntimeException;
 use SplFileInfo;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Factory;
-use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericTypeNodes;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Scope;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\ConcreteGenericTypeNode;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\TemplateGenericTypeNode;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\VirtualTypeNode;
 use uuf6429\PHPStanPHPDocTypeResolver\TypeResolver;
 use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures;
@@ -134,7 +135,7 @@ class TypeResolverTest extends TestCase
                 new Type\ArrayShapeItemNode(
                     keyName: new ConstExprIntegerNode('1'),
                     optional: false,
-                    valueType: new \uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\ConcreteGenericTypeNode(
+                    valueType: new ConcreteGenericTypeNode(
                         type: new Type\IdentifierTypeNode('list'),
                         genericTypes: [
                             new Type\IdentifierTypeNode(Fixtures\Cases\Case1::class),
@@ -186,7 +187,7 @@ class TypeResolverTest extends TestCase
 
         yield 'return int range' => [
             'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnRandomInt']),
-            'expectedReturnType' => new \uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\ConcreteGenericTypeNode(
+            'expectedReturnType' => new ConcreteGenericTypeNode(
                 type: new Type\IdentifierTypeNode('int'),
                 genericTypes: [
                     new Type\ConstTypeNode(new ConstExprIntegerNode('0')),
@@ -201,10 +202,10 @@ class TypeResolverTest extends TestCase
 
         yield 'generic class creator' => [
             'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'createClass']),
-            'expectedReturnType' => new \uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\TemplateGenericTypeNode(
+            'expectedReturnType' => new ConcreteGenericTypeNode(
                 type: new Type\IdentifierTypeNode('new'),
                 genericTypes: [
-                    new Type\IdentifierTypeNode('T'),
+                    new Type\IdentifierTypeNode('object'),
                 ],
                 variances: [
                     'invariant',
@@ -217,7 +218,7 @@ class TypeResolverTest extends TestCase
             'expectedReturnType' => new Type\UnionTypeNode([
                 new Type\IdentifierTypeNode('null'),
                 new Type\OffsetAccessTypeNode(
-                    type: new Type\IdentifierTypeNode('TColorKey'),
+                    type: new Type\IdentifierTypeNode('key-of<TColors>'),
                     offset: new VirtualTypeNode(
                         name: 'TColors',
                         type: new Type\ArrayShapeNode(
@@ -309,7 +310,7 @@ class TypeResolverTest extends TestCase
 
         yield 'return all class constants' => [
             'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnAllClassConstants']),
-            'expectedReturnType' => new \uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\ConcreteGenericTypeNode(
+            'expectedReturnType' => new ConcreteGenericTypeNode(
                 type: new Type\IdentifierTypeNode('list'),
                 genericTypes: [
                     new Type\ConstTypeNode(
@@ -332,7 +333,7 @@ class TypeResolverTest extends TestCase
 
         yield 'return Payload<Number>' => [
             'reflector' => self::reflectMethod([Fixtures\Payload::class, 'makeNumberPayload']),
-            'expectedReturnType' => new \uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\ConcreteGenericTypeNode(
+            'expectedReturnType' => new ConcreteGenericTypeNode(
                 type: new Type\IdentifierTypeNode(Fixtures\Payload::class),
                 genericTypes: [
                     new Type\IdentifierTypeNode(Fixtures\Number::class),
@@ -345,10 +346,10 @@ class TypeResolverTest extends TestCase
 
         yield 'return Payload<Payload<T>>' => [
             'reflector' => self::reflectMethod([Fixtures\Payload::class, 'makePayloadPayload']),
-            'expectedReturnType' => new \uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\TemplateGenericTypeNode(
+            'expectedReturnType' => new TemplateGenericTypeNode(
                 type: new Type\IdentifierTypeNode(Fixtures\Payload::class),
                 genericTypes: [
-                    new \uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\TemplateGenericTypeNode(
+                    new TemplateGenericTypeNode(
                         type: new Type\IdentifierTypeNode(Fixtures\Payload::class),
                         genericTypes: [
                             new Type\IdentifierTypeNode('T'),
@@ -359,6 +360,51 @@ class TypeResolverTest extends TestCase
                     ),
                 ],
                 variances: [
+                    'invariant',
+                ],
+            ),
+        ];
+
+        yield 'return Pair<int, string>' => [
+            'reflector' => self::reflectMethod([Fixtures\Pair::class, 'makeArrayString']),
+            'expectedReturnType' => new ConcreteGenericTypeNode(
+                type: new Type\IdentifierTypeNode(Fixtures\Pair::class),
+                genericTypes: [
+                    new Type\IdentifierTypeNode('int'),
+                    new Type\IdentifierTypeNode('string'),
+                ],
+                variances: [
+                    'invariant',
+                    'invariant',
+                ],
+            ),
+        ];
+
+        yield 'return Pair<int, T of mixed>' => [
+            'reflector' => self::reflectMethod([Fixtures\Pair::class, 'makeArrayValue']),
+            'expectedReturnType' => new ConcreteGenericTypeNode(
+                type: new Type\IdentifierTypeNode(Fixtures\Pair::class),
+                genericTypes: [
+                    new Type\IdentifierTypeNode('int'),
+                    new Type\IdentifierTypeNode('mixed'),
+                ],
+                variances: [
+                    'invariant',
+                    'invariant',
+                ],
+            ),
+        ];
+
+        yield 'return Pair<T, T>' => [
+            'reflector' => self::reflectMethod([Fixtures\Pair::class, 'makeTwins']),
+            'expectedReturnType' => new ConcreteGenericTypeNode(
+                type: new Type\IdentifierTypeNode(Fixtures\Pair::class),
+                genericTypes: [
+                    new Type\IdentifierTypeNode('mixed'),
+                    new Type\IdentifierTypeNode('mixed'),
+                ],
+                variances: [
+                    'invariant',
                     'invariant',
                 ],
             ),
@@ -419,6 +465,24 @@ class TypeResolverTest extends TestCase
 
         $this->expectException(LogicException::class);
         $this->expectExceptionMessage('Class/type `' . Fixtures\TypeResolverTestFixture::class . '` doesn\'t have a parent');
+
+        $docBlock->getTag('@return');
+    }
+
+    public function testThatLocalTypeDefRequiresClass(): void
+    {
+        $docBlock = Factory::createInstance()
+            ->createFromComment(
+                <<<'PHP'
+                /**
+                 * @phpstan-type TExample string
+                 * @return TExample
+                 */
+                PHP,
+            );
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('PHPStan local type requires a class');
 
         $docBlock->getTag('@return');
     }

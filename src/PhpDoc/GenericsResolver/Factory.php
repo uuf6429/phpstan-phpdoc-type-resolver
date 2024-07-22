@@ -55,10 +55,10 @@ class Factory
             => $reflector->getName(),
 
             $reflector instanceof ReflectionMethod
-            => "{$reflector->getDeclaringClass()->getName()}->{$reflector->getName()}",
+            => "{$reflector->getDeclaringClass()->getName()}->{$reflector->getName()}()",
 
             $reflector instanceof ReflectionFunction
-            => $reflector->getName(),
+            => "{$reflector->getName()}()",
 
             default
             => null,

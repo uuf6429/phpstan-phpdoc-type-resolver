@@ -28,7 +28,6 @@ use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\VirtualTypeNode;
 use uuf6429\PHPStanPHPDocTypeResolver\TypeResolver;
 use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures;
 use uuf6429\PHPStanPHPDocTypeResolverTests\ReflectsValuesTrait;
-
 use function uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\getTypeResolverTestClosureReturningImportedType;
 use function uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\getTypeResolverTestClosureReturningString;
 
@@ -218,6 +217,7 @@ class TypeResolverTest extends TestCase
             'expectedReturnType' => new Type\UnionTypeNode([
                 new Type\IdentifierTypeNode('null'),
                 new Type\OffsetAccessTypeNode(
+                    // TODO key-of below is wrong, it should be a more specialized (parsed) node, but it probably won't impact us much in the short term.
                     type: new Type\IdentifierTypeNode('key-of<TColors>'),
                     offset: new VirtualTypeNode(
                         name: 'TColors',
@@ -405,6 +405,19 @@ class TypeResolverTest extends TestCase
                 ],
                 variances: [
                     'invariant',
+                    'invariant',
+                ],
+            ),
+        ];
+
+        yield 'return T' => [
+            'reflector' => self::reflectMethod([Fixtures\TypeResolverChildTestFixture::class, 'getSimilarItems']),
+            'expectedReturnType' => new TemplateGenericTypeNode(
+                type: new Type\IdentifierTypeNode('list'),
+                genericTypes: [
+                    new Type\IdentifierTypeNode('TItem'),
+                ],
+                variances: [
                     'invariant',
                 ],
             ),

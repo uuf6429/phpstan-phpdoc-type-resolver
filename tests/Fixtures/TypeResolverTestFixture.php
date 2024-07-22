@@ -91,6 +91,13 @@ abstract class TypeResolverTestFixture
     abstract public function translateColor(string $colorName): ?string;
 
     /**
+     * @template TItem
+     * @param TItem $item
+     * @return list<TItem>
+     */
+    abstract public function getSimilarItems($item): array;
+
+    /**
      * @return callable(int, bool $named): string
      */
     abstract public function returnCallableWithTypedArgs(): callable;

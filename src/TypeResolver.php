@@ -13,7 +13,6 @@ use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Resolver as Generi
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Scope;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\ConcreteGenericTypeNode;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\TemplateGenericTypeNode;
-use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\VirtualTypeNode;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpImports\Resolver as PhpImportsResolver;
 
 /**

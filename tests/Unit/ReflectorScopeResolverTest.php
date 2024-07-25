@@ -31,6 +31,7 @@ use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\ObjectTestFixture;
 use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\PlainEnum;
 use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\StringEnum;
 use uuf6429\PHPStanPHPDocTypeResolverTests\ReflectsValuesTrait;
+
 use function uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\getFunctionWithParameter;
 
 class ReflectorScopeResolverTest extends TestCase

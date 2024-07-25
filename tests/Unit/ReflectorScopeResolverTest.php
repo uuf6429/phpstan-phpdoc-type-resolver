@@ -24,7 +24,7 @@ use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\ResolverRefState;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\ResolverValueState;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\ReflectorScopeResolver;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Scope;
-use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\VirtualTypeNode;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\TypeDefTypeNode;
 use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\AttributeTestFixture;
 use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\IntegerEnum;
 use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\ObjectTestFixture;
@@ -67,7 +67,7 @@ class ReflectorScopeResolverTest extends TestCase
     public static function reflectorScopeResolverDataProvider(): iterable
     {
         $importedTypesMap = [
-            'TColors' => new VirtualTypeNode(
+            'TColors' => new TypeDefTypeNode(
                 name: 'TColors',
                 type: new Type\ArrayShapeNode(
                     items: [
@@ -92,7 +92,7 @@ class ReflectorScopeResolverTest extends TestCase
                 ),
                 declaringClass: 'TypeResolverTestFixture',
             ),
-            'TOtherColors' => new VirtualTypeNode(
+            'TOtherColors' => new TypeDefTypeNode(
                 name: 'TOtherColors',
                 type: new Type\ArrayShapeNode(
                     items: [

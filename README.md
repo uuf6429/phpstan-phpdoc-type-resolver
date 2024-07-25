@@ -38,7 +38,7 @@ There are two ways to retrieve that information, as shown below.
 - *[`ThisTypeNode`] is converted into [`IdentifierTypeNode`] for the currently-passed class.
 - *[`GenericTypeNode`] to either [`ConcreteGenericTypeNode`] or [`TemplateGenericTypeNode`] based on if the
   received instance contains unresolved generic/template types.
-- PHPStan locally-defined or imported-types, a [`VirtualTypeNode`] will be provided (instead of an
+- PHPStan locally-defined or imported-types, a [`TypeDefTypeNode`] will be provided (instead of an
   [`IdentifierTypeNode`] with just the type name).
 
 (*) conversion is mandatory, failures will trigger some sort of exception (meaning: the original type _should_ never be
@@ -156,4 +156,4 @@ $finalReturnType = $returnTag->type;
 [`GenericTypeNode`]: https://github.com/phpstan/phpdoc-parser/blob/1.23.x/src/Ast/Type/GenericTypeNode.php
 [`ConcreteGenericTypeNode`]: https://github.com/uuf6429/phpstan-phpdoc-type-resolver/blob/main/src/PhpDoc/Types/ConcreteGenericTypeNode.php
 [`TemplateGenericTypeNode`]: https://github.com/uuf6429/phpstan-phpdoc-type-resolver/blob/main/src/PhpDoc/Types/TemplateGenericTypeNode.php
-[`VirtualTypeNode`]:https://github.com/uuf6429/phpstan-phpdoc-type-resolver/blob/main/src/PhpDoc/Types/VirtualTypeNode.php
+[`TypeDefTypeNode`]:https://github.com/uuf6429/phpstan-phpdoc-type-resolver/blob/main/src/PhpDoc/Types/TypeDefTypeNode.php

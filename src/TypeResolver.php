@@ -269,11 +269,11 @@ class TypeResolver
     private function resolveGenericType(Type\GenericTypeNode $orig, GenericsResolver $genericResolver): Type\GenericTypeNode
     {
         return in_array($orig->type->name, self::BASIC_TYPES)
-            ? $this->resolveGenericVirtualType($orig, $genericResolver)
+            ? $this->resolveGenericBasicType($orig, $genericResolver)
             : $this->resolveGenericClassType($orig, $genericResolver);
     }
 
-    private function resolveGenericVirtualType(Type\GenericTypeNode $orig, GenericsResolver $genericResolver): TemplateGenericTypeNode|ConcreteGenericTypeNode
+    private function resolveGenericBasicType(Type\GenericTypeNode $orig, GenericsResolver $genericResolver): TemplateGenericTypeNode|ConcreteGenericTypeNode
     {
         $isIntRange = $orig->type instanceof Type\IdentifierTypeNode && in_array($orig->type->name, self::RANGE_TYPES);
         $isGenericUtilityType = $orig->type instanceof Type\IdentifierTypeNode && in_array($orig->type->name, self::GENERIC_UTILITY_TYPES);

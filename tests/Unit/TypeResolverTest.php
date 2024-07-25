@@ -25,11 +25,11 @@ use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Resolver;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Scope;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\ConcreteGenericTypeNode;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\TemplateGenericTypeNode;
-use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\VirtualTypeNode;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\TemplateTypeNode;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\TypeDefTypeNode;
 use uuf6429\PHPStanPHPDocTypeResolver\TypeResolver;
 use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures;
 use uuf6429\PHPStanPHPDocTypeResolverTests\ReflectsValuesTrait;
-
 use function uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\getTypeResolverTestClosureReturningImportedType;
 use function uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\getTypeResolverTestClosureReturningString;
 
@@ -53,7 +53,7 @@ class TypeResolverTest extends TestCase
      */
     public static function returnTypeDataProvider(): iterable
     {
-        $colorsVirtualType = new VirtualTypeNode(
+        $colorsTypeDef = new TypeDefTypeNode(
             name: 'TColors',
             type: new Type\ArrayShapeNode(
                 items: [
@@ -232,7 +232,10 @@ class TypeResolverTest extends TestCase
             'expectedReturnType' => new ConcreteGenericTypeNode(
                 type: new Type\IdentifierTypeNode('new'),
                 genericTypes: [
-                    new Type\IdentifierTypeNode('object'),
+                    new TemplateTypeNode(
+                        name: 'T',
+                        bound: new Type\IdentifierTypeNode('object'),
+                    ),
                 ],
                 variances: [
                     'invariant',
@@ -245,16 +248,19 @@ class TypeResolverTest extends TestCase
             'expectedReturnType' => new Type\UnionTypeNode([
                 new Type\IdentifierTypeNode('null'),
                 new Type\OffsetAccessTypeNode(
-                    type: new ConcreteGenericTypeNode(
-                        type: new Type\IdentifierTypeNode('key-of'),
-                        genericTypes: [
-                            $colorsVirtualType,
-                        ],
-                        variances: [
-                            'invariant',
-                        ],
+                    type: new TemplateTypeNode(
+                        name: 'TColorKey',
+                        bound: new ConcreteGenericTypeNode(
+                            type: new Type\IdentifierTypeNode('key-of'),
+                            genericTypes: [
+                                $colorsTypeDef,
+                            ],
+                            variances: [
+                                'invariant',
+                            ],
+                        ),
                     ),
-                    offset: $colorsVirtualType,
+                    offset: $colorsTypeDef,
                 ),
             ]),
         ];
@@ -363,7 +369,10 @@ class TypeResolverTest extends TestCase
                     new TemplateGenericTypeNode(
                         type: new Type\IdentifierTypeNode(Fixtures\Payload::class),
                         genericTypes: [
-                            new Type\IdentifierTypeNode('T'),
+                            new TemplateTypeNode(
+                                name: 'T',
+                                bound: null,
+                            ),
                         ],
                         variances: [
                             'invariant',
@@ -397,7 +406,10 @@ class TypeResolverTest extends TestCase
                 type: new Type\IdentifierTypeNode(Fixtures\Pair::class),
                 genericTypes: [
                     new Type\IdentifierTypeNode('int'),
-                    new Type\IdentifierTypeNode('mixed'),
+                    new TemplateTypeNode(
+                        name: 'TValue',
+                        bound: new Type\IdentifierTypeNode('mixed'),
+                    ),
                 ],
                 variances: [
                     'invariant',
@@ -411,8 +423,14 @@ class TypeResolverTest extends TestCase
             'expectedReturnType' => new ConcreteGenericTypeNode(
                 type: new Type\IdentifierTypeNode(Fixtures\Pair::class),
                 genericTypes: [
-                    new Type\IdentifierTypeNode('mixed'),
-                    new Type\IdentifierTypeNode('mixed'),
+                    new TemplateTypeNode(
+                        name: 'TTwinType',
+                        bound: new Type\IdentifierTypeNode('mixed'),
+                    ),
+                    new TemplateTypeNode(
+                        name: 'TTwinType',
+                        bound: new Type\IdentifierTypeNode('mixed'),
+                    ),
                 ],
                 variances: [
                     'invariant',
@@ -426,7 +444,10 @@ class TypeResolverTest extends TestCase
             'expectedReturnType' => new TemplateGenericTypeNode(
                 type: new Type\IdentifierTypeNode('list'),
                 genericTypes: [
-                    new Type\IdentifierTypeNode('TItem'),
+                    new TemplateTypeNode(
+                        name: 'TItem',
+                        bound: null,
+                    ),
                 ],
                 variances: [
                     'invariant',

@@ -16,7 +16,8 @@ use ReflectionMethod;
 use Reflector;
 use RuntimeException;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Factory as PhpDocFactory;
-use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\VirtualTypeNode;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\TemplateTypeNode;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\TypeDefTypeNode;
 use uuf6429\PHPStanPHPDocTypeResolver\TypeResolver;
 
 class Factory
@@ -56,7 +57,7 @@ class Factory
     public function extractFromPhpDocNode(PhpDocNode $docNode, null|string $currentClass): Resolver
     {
         return new Resolver(
-            $this->getExtractForTemplateTags($docNode),
+            $this->getExtractorForTemplateTags($docNode),
             $this->getExtractorForTypeDefTags($docNode, $currentClass),
             $this->getExtractorForTypeImportTags($docNode),
         );
@@ -82,7 +83,7 @@ class Factory
     /**
      * @return iterable<string, TypeNode>
      */
-    private function getExtractForTemplateTags(PhpDocNode $docNode): iterable
+    private function getExtractorForTemplateTags(PhpDocNode $docNode): iterable
     {
         /** @var list<PhpDocTagNode<TemplateTagValueNode>> $tags */
         $tags = array_merge(
@@ -90,7 +91,12 @@ class Factory
             $docNode->getTagsByName('@phpstan-template'),
         );
         foreach ($tags as $tag) {
-            yield $tag->value->name => $this->getTypeResolver()->resolve($tag->value->bound ?? new IdentifierTypeNode($tag->value->name), $this->getGenericsResolver());
+            yield $tag->value->name => new TemplateTypeNode(
+                name: $tag->value->name,
+                bound: $tag->value->bound
+                    ? $this->getTypeResolver()->resolve($tag->value->bound, $this->getGenericsResolver())
+                    : null,
+            );
         }
     }
 
@@ -106,7 +112,7 @@ class Factory
             throw new RuntimeException('PHPStan local type requires a class');
         }
         foreach ($tags as $tag) {
-            yield $tag->value->alias => new VirtualTypeNode(
+            yield $tag->value->alias => new TypeDefTypeNode(
                 name: $tag->value->alias,
                 type: $this->getTypeResolver()->resolve($tag->value->type, $this->getGenericsResolver()),
                 declaringClass: $currentClass,
@@ -124,7 +130,7 @@ class Factory
         $tags = $docNode->getTagsByName('@phpstan-import-type');
         foreach ($tags as $tag) {
             $name = $tag->value->importedAs ?? $tag->value->importedAlias;
-            yield $name => new VirtualTypeNode(
+            yield $name => new TypeDefTypeNode(
                 name: $name,
                 type: $this->getLocalTypeFromClass(
                     $this->getNodeClass($this->getTypeResolver()->resolve($tag->value->importedFrom, $this->getGenericsResolver())),

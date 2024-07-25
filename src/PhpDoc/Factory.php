@@ -4,6 +4,8 @@ namespace uuf6429\PHPStanPHPDocTypeResolver\PhpDoc;
 
 use PHPStan\PhpDocParser;
 use Reflector;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Factory as GenericsResolverFactory;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Resolver as GenericsResolver;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpImports;
 use uuf6429\PHPStanPHPDocTypeResolver\TypeResolver;
 
@@ -16,7 +18,7 @@ class Factory
     private readonly PhpDocParser\Lexer\Lexer $lexer;
     private readonly PhpDocParser\Parser\PhpDocParser $parser;
     private readonly PhpImports\Resolver $phpImportsResolver;
-    private readonly GenericTypesExtractor $genericTypesExporter;
+    private readonly GenericsResolverFactory $genericsResolverFactory;
 
     public static function createInstance(): self
     {
@@ -24,16 +26,16 @@ class Factory
     }
 
     public function __construct(
-        GenericTypesExtractor $genericTypesExporter =  null,
-        ReflectorScopeResolver $scopeResolver = null,
-        PhpDocParser\Lexer\Lexer $phpDocParserLexer = null,
+        GenericsResolverFactory             $genericTypesExporter =  null,
+        ReflectorScopeResolver              $scopeResolver = null,
+        PhpDocParser\Lexer\Lexer            $phpDocParserLexer = null,
         PhpDocParser\Parser\ConstExprParser $phpDocConstExprParser = null,
-        PhpDocParser\Parser\TypeParser$phpDocTypeParser = null,
-        PhpDocParser\Parser\PhpDocParser $phpDocParser = null,
-        PhpImports\Resolver $phpImportsResolver = null,
+        PhpDocParser\Parser\TypeParser      $phpDocTypeParser = null,
+        PhpDocParser\Parser\PhpDocParser    $phpDocParser = null,
+        PhpImports\Resolver                 $phpImportsResolver = null,
     ) {
-        $this->genericTypesExporter = $genericTypesExporter ?? new GenericTypesExtractor($this);
-        $this->scopeResolver = $scopeResolver ?? new ReflectorScopeResolver($this->genericTypesExporter);
+        $this->genericsResolverFactory = $genericTypesExporter ?? new GenericsResolverFactory($this);
+        $this->scopeResolver = $scopeResolver ?? new ReflectorScopeResolver($this->genericsResolverFactory);
         $this->lexer = $phpDocParserLexer ?? new PhpDocParser\Lexer\Lexer();
         $constExprParser = $phpDocConstExprParser ?? new PhpDocParser\Parser\ConstExprParser();
         $typeParser = $phpDocTypeParser ?? new PhpDocParser\Parser\TypeParser($constExprParser);
@@ -51,22 +53,22 @@ class Factory
      * @param null|string $file The file where the comment appeared in.
      * @param null|int $line The (approximate) line where the comment appeared.
      * @param null|class-string $class Fully-qualified name of the class that the comment applies to.
-     * @param list<string> $inheritedGenericTypes List of generic types inherited by, but outside of, the current
-     *                                            scope. For example, from class-level in case of method scope.
+     * @param GenericsResolver $genericsResolver List of generic types inherited by, but outside of, the current
+     *                                           scope. For example, from class-level in case of method scope.
      */
     public function createFromComment(
-        string $comment,
-        ?string $file = null,
-        ?int $line = null,
-        ?string $class = null,
-        array $inheritedGenericTypes = [],
+        string   $comment,
+        ?string  $file = null,
+        ?int     $line = null,
+        ?string  $class = null,
+        GenericsResolver $genericsResolver = new GenericsResolver(),
     ): Block {
         return $this->createFromScope(new Scope(
             file: $file,
             line: $line,
             class: $class,
             comment: $comment,
-            inheritedGenericTypes: $inheritedGenericTypes,
+            genericsResolver: $genericsResolver,
         ));
     }
 
@@ -80,9 +82,10 @@ class Factory
                     ),
                 ),
             ),
-            new TypeResolver($scope, $this->phpImportsResolver),
-            $scope->inheritedGenericTypes,
-            $this->genericTypesExporter,
+            $typeResolver = new TypeResolver($scope, $this->phpImportsResolver),
+            $scope->genericsResolver,
+            $this->genericsResolverFactory->withResolvers($typeResolver, $scope->genericsResolver),
+            $scope->class,
         );
     }
 }

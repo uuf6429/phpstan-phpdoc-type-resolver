@@ -2,7 +2,7 @@
 
 namespace uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures;
 
-enum PlainEnumTestFixture
+enum PlainEnum
 {
     case Case1;
     case Case2;

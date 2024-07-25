@@ -9,11 +9,12 @@ use ReflectionFunction;
 use ReflectionMethod;
 use ReflectionProperty;
 use Reflector;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Factory as GenericsResolverFactory;
 
 class ReflectorScopeResolver
 {
     public function __construct(
-        private readonly GenericTypesExtractor $genericTypesExtractor = new GenericTypesExtractor(new Factory()),
+        private readonly GenericsResolverFactory $genericsResolverFactory,
     ) {
         //
     }
@@ -27,16 +28,16 @@ class ReflectorScopeResolver
                 line: $reflector->getStartLine() ?: null,
                 class: $reflector->getName(),
                 comment: $reflector->getDocComment() ?: '',
-                inheritedGenericTypes: [],
+                genericsResolver: new GenericsResolver\Resolver(),
             ),
 
             $reflector instanceof ReflectionMethod && ($class = $reflector->getDeclaringClass())
             => new Scope(
                 file: $reflector->getFileName() ?: null,
                 line: $reflector->getStartLine() ?: null,
-                class:$class->getName(),
+                class: $class->getName(),
                 comment: $reflector->getDocComment() ?: '',
-                inheritedGenericTypes: $this->genericTypesExtractor->extractFromReflector($class),
+                genericsResolver: $this->genericsResolverFactory->extractFromReflector($class),
             ),
 
             $reflector instanceof ReflectionFunction
@@ -45,7 +46,7 @@ class ReflectorScopeResolver
                 line: $reflector->getStartLine() ?: null,
                 class: ($class = $reflector->getClosureScopeClass()) ? $class->getName() : null,
                 comment: $reflector->getDocComment() ?: '',
-                inheritedGenericTypes: [],
+                genericsResolver: new GenericsResolver\Resolver(),
             ),
 
             $reflector instanceof ReflectionClassConstant && ($class = $reflector->getDeclaringClass())
@@ -54,7 +55,7 @@ class ReflectorScopeResolver
                 line: $class->getStartLine() ?: null,
                 class: $class->getName(),
                 comment: $reflector->getDocComment() ?: '',
-                inheritedGenericTypes: $this->genericTypesExtractor->extractFromReflector($class),
+                genericsResolver: $this->genericsResolverFactory->extractFromReflector($class),
             ),
 
             $reflector instanceof ReflectionProperty && ($class = $reflector->getDeclaringClass())
@@ -63,7 +64,7 @@ class ReflectorScopeResolver
                 line: $class->getStartLine() ?: null,
                 class: $class->getName(),
                 comment: $reflector->getDocComment() ?: '',
-                inheritedGenericTypes: $this->genericTypesExtractor->extractFromReflector($class),
+                genericsResolver: $this->genericsResolverFactory->extractFromReflector($class),
             ),
 
             default

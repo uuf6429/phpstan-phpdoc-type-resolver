@@ -27,10 +27,22 @@ Because `phpstan/phpdoc-parser` doesn't resolve types (it's not its responsibili
 ## 🚀 Usage
 
 In principle the resolver needs two things:
-1. The PHPStan-PHPDoc type (an instance of [TypeNode](https://github.com/phpstan/phpdoc-parser/blob/1.23.x/src/Ast/Type/TypeNode.php)).
+
+1. The PHPStan-PHPDoc type (an instance of [`TypeNode`]).
 2. 'Scope' information of where that type occurred.
 
 There are two ways to retrieve that information, as shown below.
+
+**Important:** The resolver will always convert some specific PHPStan types into something else as follows:
+
+- *[`ThisTypeNode`] is converted into [`IdentifierTypeNode`] for the currently-passed class.
+- *[`GenericTypeNode`] to either [`ConcreteGenericTypeNode`] or [`TemplateGenericTypeNode`] based on if the
+  received instance contains unresolved generic/template types.
+- PHPStan locally-defined or imported-types, a [`VirtualTypeNode`] will be provided (instead of an
+  [`IdentifierTypeNode`] with just the type name).
+
+(*) conversion is mandatory, failures will trigger some sort of exception (meaning: the original type _should_ never be
+returned).
 
 ### 😎 Via Reflection
 
@@ -135,3 +147,13 @@ $docBlock = \uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Factory::createInstance()
 $returnTag = $docBlock->getTag('@return');
 $finalReturnType = $returnTag->type;
 ```
+
+---
+
+[`TypeNode`]: https://github.com/phpstan/phpdoc-parser/blob/1.23.x/src/Ast/Type/TypeNode.php
+[`ThisTypeNode`]: https://github.com/phpstan/phpdoc-parser/blob/1.23.x/src/Ast/Type/ThisTypeNode.php
+[`IdentifierTypeNode`]: https://github.com/phpstan/phpdoc-parser/blob/1.23.x/src/Ast/Type/IdentifierTypeNode.php
+[`GenericTypeNode`]: https://github.com/phpstan/phpdoc-parser/blob/1.23.x/src/Ast/Type/GenericTypeNode.php
+[`ConcreteGenericTypeNode`]: https://github.com/uuf6429/phpstan-phpdoc-type-resolver/blob/main/src/PhpDoc/Types/ConcreteGenericTypeNode.php
+[`TemplateGenericTypeNode`]: https://github.com/uuf6429/phpstan-phpdoc-type-resolver/blob/main/src/PhpDoc/Types/TemplateGenericTypeNode.php
+[`VirtualTypeNode`]:https://github.com/uuf6429/phpstan-phpdoc-type-resolver/blob/main/src/PhpDoc/Types/VirtualTypeNode.php

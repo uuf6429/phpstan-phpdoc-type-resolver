@@ -1,0 +1,26 @@
+<?php
+
+declare(strict_types=1);
+
+namespace PHPStan\PhpDocParser\Ast\PhpDoc;
+
+interface PhpDocTagValueNode
+{
+    //
+}
+
+/**
+ * @template TValue of PhpDocTagValueNode
+ */
+abstract class PhpDocTagNode
+{
+    /**
+     * @var TValue
+     */
+    public PhpDocTagValueNode $value;
+
+    /**
+     * @param TValue $value
+     */
+    abstract public function __construct(string $name, PhpDocTagValueNode $value);
+}

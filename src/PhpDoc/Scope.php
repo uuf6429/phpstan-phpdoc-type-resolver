@@ -2,6 +2,8 @@
 
 namespace uuf6429\PHPStanPHPDocTypeResolver\PhpDoc;
 
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Resolver;
+
 class Scope
 {
     /**
@@ -15,14 +17,13 @@ class Scope
      *   from the class-level PHPDoc, if any (and not generic types from the current $comment).
      *
      * @param null|class-string $class
-     * @param list<string> $inheritedGenericTypes
      */
     public function __construct(
-        public readonly ?string $file,
-        public readonly ?int $line,
-        public readonly ?string $class,
-        public readonly string $comment,
-        public readonly array $inheritedGenericTypes,
+        public readonly ?string  $file,
+        public readonly ?int     $line,
+        public readonly ?string  $class,
+        public readonly string   $comment,
+        public readonly Resolver $genericsResolver,
     ) {
         //
     }

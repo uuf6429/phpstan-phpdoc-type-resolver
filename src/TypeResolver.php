@@ -310,7 +310,7 @@ class TypeResolver
 
         if (!$isGenericUtilityType) {
             foreach ($convertedGenericTypes as $i => $type) {
-                $genericResolver->setTemplateTypeAt($i, $type);
+                $genericResolver->setTemplateTypeAt($i, (string)$orig->genericTypes[$i], $type);
             }
         }
 

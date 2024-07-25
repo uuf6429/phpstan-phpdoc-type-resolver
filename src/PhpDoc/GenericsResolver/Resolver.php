@@ -41,9 +41,9 @@ class Resolver
         $this->templateTypesMapCache[$template] = $concrete;
     }
 
-    public function setTemplateTypeAt(int $index, TypeNode $concrete): void
+    public function setTemplateTypeAt(int $index, string $templateFallback, TypeNode $concrete): void
     {
-        $this->setTemplateType(array_keys($this->getTemplateTypesMap())[$index], $concrete);
+        $this->setTemplateType(array_keys($this->getTemplateTypesMap())[$index] ?? $templateFallback, $concrete);
     }
 
     /**

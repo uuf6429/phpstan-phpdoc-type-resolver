@@ -5,6 +5,8 @@ namespace uuf6429\PHPStanPHPDocTypeResolverTests\Unit;
 use Attribute;
 use Exception;
 use InvalidArgumentException;
+use PHPStan\PhpDocParser\Ast\ConstExpr\ConstExprStringNode;
+use PHPStan\PhpDocParser\Ast\Type;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
@@ -15,18 +17,20 @@ use ReflectionObject;
 use ReflectionParameter;
 use ReflectionProperty;
 use Reflector;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Factory as PhpDocFactory;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Factory as GenericsResolverFactory;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Resolver;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\ResolverRefState;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\ResolverValueState;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\ReflectorScopeResolver;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Scope;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\VirtualTypeNode;
 use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\AttributeTestFixture;
 use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\IntegerEnum;
 use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\ObjectTestFixture;
 use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\PlainEnum;
 use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\StringEnum;
 use uuf6429\PHPStanPHPDocTypeResolverTests\ReflectsValuesTrait;
-
 use function uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\getFunctionWithParameter;
 
 class ReflectorScopeResolverTest extends TestCase
@@ -36,7 +40,7 @@ class ReflectorScopeResolverTest extends TestCase
     #[DataProvider('reflectorScopeResolverDataProvider')]
     public function testReflectorScopeResolver(?Scope $expectedResult, ?Exception $expectedException, Reflector $reflector): void
     {
-        $resolver = new ReflectorScopeResolver();
+        $resolver = new ReflectorScopeResolver(new GenericsResolverFactory(new PhpDocFactory()));
 
         if ($expectedException) {
             $this->expectException(get_class($expectedException));
@@ -61,6 +65,59 @@ class ReflectorScopeResolverTest extends TestCase
      */
     public static function reflectorScopeResolverDataProvider(): iterable
     {
+        $importedTypesMap = [
+            'TColors' => new VirtualTypeNode(
+                name: 'TColors',
+                type: new Type\ArrayShapeNode(
+                    items: [
+                        new Type\ArrayShapeItemNode(
+                            keyName: new Type\IdentifierTypeNode('red'),
+                            optional: false,
+                            valueType: new Type\ConstTypeNode(constExpr: new ConstExprStringNode('#F00')),
+                        ),
+                        new Type\ArrayShapeItemNode(
+                            keyName: new Type\IdentifierTypeNode('green'),
+                            optional: false,
+                            valueType: new Type\ConstTypeNode(constExpr: new ConstExprStringNode('#0F0')),
+                        ),
+                        new Type\ArrayShapeItemNode(
+                            keyName: new Type\IdentifierTypeNode('blue'),
+                            optional: false,
+                            valueType: new Type\ConstTypeNode(constExpr: new ConstExprStringNode('#00F')),
+                        ),
+                    ],
+                    sealed: true,
+                    kind: 'array',
+                ),
+                declaringClass: 'TypeResolverTestFixture',
+            ),
+            'TOtherColors' => new VirtualTypeNode(
+                name: 'TOtherColors',
+                type: new Type\ArrayShapeNode(
+                    items: [
+                        new Type\ArrayShapeItemNode(
+                            keyName: new Type\IdentifierTypeNode('red'),
+                            optional: false,
+                            valueType: new Type\ConstTypeNode(constExpr: new ConstExprStringNode('#F00')),
+                        ),
+                        new Type\ArrayShapeItemNode(
+                            keyName: new Type\IdentifierTypeNode('green'),
+                            optional: false,
+                            valueType: new Type\ConstTypeNode(constExpr: new ConstExprStringNode('#0F0')),
+                        ),
+                        new Type\ArrayShapeItemNode(
+                            keyName: new Type\IdentifierTypeNode('blue'),
+                            optional: false,
+                            valueType: new Type\ConstTypeNode(constExpr: new ConstExprStringNode('#00F')),
+                        ),
+                    ],
+                    sealed: true,
+                    kind: 'array',
+                ),
+                declaringClass: 'TypeResolverTestFixture',
+            ),
+        ];
+
         yield 'ReflectionProperty' => [
             'expectedResult' => new Scope(
                 file: dirname(__DIR__) . '/Fixtures/ObjectTestFixture.php',
@@ -72,6 +129,7 @@ class ReflectorScopeResolverTest extends TestCase
                          */
                     PHP,
                 genericsResolver: new Resolver(
+                    importedTypesMap: $importedTypesMap,
                     state: new ResolverRefState([
                         new ResolverValueState(true),
                         new ResolverValueState(true),
@@ -102,6 +160,7 @@ class ReflectorScopeResolverTest extends TestCase
                      * @phpstan-import-type TColors from TypeResolverTestFixture as TOtherColors
                      */
                     PHP,
+                genericsResolver: new Resolver(),
             ),
             'expectedException' => null,
             'reflector' => new ReflectionClass(ObjectTestFixture::class),
@@ -119,6 +178,7 @@ class ReflectorScopeResolverTest extends TestCase
                      * @phpstan-import-type TColors from TypeResolverTestFixture as TOtherColors
                      */
                     PHP,
+                genericsResolver: new Resolver(),
             ),
             'expectedException' => null,
             'reflector' => new ReflectionObject(new ObjectTestFixture('hello')),
@@ -130,6 +190,7 @@ class ReflectorScopeResolverTest extends TestCase
                 line: 5,
                 class: IntegerEnum::class,
                 comment: '',
+                genericsResolver: new Resolver(),
             ),
             'expectedException' => null,
             'reflector' => new ReflectionEnum(IntegerEnum::class),
@@ -188,6 +249,7 @@ class ReflectorScopeResolverTest extends TestCase
                 class: ObjectTestFixture::class,
                 comment: '',
                 genericsResolver: new Resolver(
+                    importedTypesMap: $importedTypesMap,
                     state: new ResolverRefState([
                         new ResolverValueState(true),
                         new ResolverValueState(true),
@@ -214,6 +276,7 @@ class ReflectorScopeResolverTest extends TestCase
                          */
                     PHP,
                 genericsResolver: new Resolver(
+                    importedTypesMap: $importedTypesMap,
                     state: new ResolverRefState([
                         new ResolverValueState(true),
                         new ResolverValueState(true),
@@ -234,6 +297,7 @@ class ReflectorScopeResolverTest extends TestCase
                      * @param 'hello'|'bye' $greeting
                      */
                     PHP,
+                genericsResolver: new Resolver(),
             ),
             'expectedException' => null,
             'reflector' => self::reflectFunction(getFunctionWithParameter()),

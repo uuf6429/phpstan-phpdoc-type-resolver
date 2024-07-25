@@ -23,7 +23,7 @@ class Scope
         public readonly ?int     $line,
         public readonly ?string  $class,
         public readonly string   $comment,
-        public readonly Resolver $genericsResolver = new Resolver(),
+        public readonly Resolver $genericsResolver,
     ) {
         //
     }

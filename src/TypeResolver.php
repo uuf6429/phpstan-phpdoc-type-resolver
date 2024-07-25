@@ -44,6 +44,7 @@ class TypeResolver
         'class-string', 'callable-string', 'numeric-string', 'non-empty-string', 'non-falsy-string', 'truthy-string', 'literal-string',
         'void', 'never', 'never-return', 'never-returns', 'no-return',
         'int-mask', 'int-mask-of',
+        'key-of', 'value-of',
     ];
 
     private const RELATIVE_TYPES = ['self', 'static', '$this', 'parent'];
@@ -225,10 +226,8 @@ class TypeResolver
             ),
 
             $orig instanceof Type\ThisTypeNode
-            => new Type\IdentifierTypeNode(
-                name: $this->resolveRelativeTypes('$this')
-                    ?? throw new LogicException('The `$this` type should always be resolved'),
-            ),
+            => $this->resolveRelativeTypes('$this')
+                ?? throw new LogicException('The `$this` type should always be resolved'),
 
             $orig instanceof Type\UnionTypeNode
             => new Type\UnionTypeNode(
@@ -330,18 +329,13 @@ class TypeResolver
 
     private function resolveIdentifier(string $symbol, GenericsResolver $genericResolver): Type\TypeNode
     {
-        $result = $this->resolveVirtualOrGenericTypes($symbol, $genericResolver)
+        return $this->resolveBasicType($symbol)
+            ?? $this->resolveVirtualOrGenericTypes($symbol, $genericResolver)
             ?? $this->resolveRelativeTypes($symbol)
-            ?? $this->resolveBasicType($symbol)
             ?? $this->resolveImportedType($symbol)
+            ?? $this->resolveClassLike($symbol)
             ?? $this->resolveNamespacedType($symbol)
-            ?? $symbol;
-
-        if (is_string($result)) {
-            $result = new Type\IdentifierTypeNode($result);
-        }
-
-        return $result;
+            ?? new Type\IdentifierTypeNode($symbol);
     }
 
     private function resolveVirtualOrGenericTypes(string $symbol, GenericsResolver $genericResolver): null|Type\TypeNode
@@ -349,7 +343,7 @@ class TypeResolver
         return $genericResolver->map($symbol);
     }
 
-    private function resolveRelativeTypes(string $symbol): ?string
+    private function resolveRelativeTypes(string $symbol): ?Type\IdentifierTypeNode
     {
         if (!in_array($symbol, self::RELATIVE_TYPES)) {
             return null;
@@ -360,22 +354,22 @@ class TypeResolver
         }
 
         if ($symbol === 'parent') {
-            $parent = get_parent_class($this->scope->class);
-            return $parent
-                ?: throw new LogicException("Class/type `{$this->scope->class}` doesn't have a parent");
+            return ($parent = get_parent_class($this->scope->class)) !== false
+                ? new Type\IdentifierTypeNode($parent)
+                : throw new LogicException("Class/type `{$this->scope->class}` doesn't have a parent");
         }
 
-        return $this->scope->class;
+        return new Type\IdentifierTypeNode($this->scope->class);
     }
 
-    private function resolveBasicType(string $symbol): ?string
+    private function resolveBasicType(string $symbol): ?Type\IdentifierTypeNode
     {
         return in_array($symbol, self::BASIC_TYPES)
-            ? $symbol
+            ? new Type\IdentifierTypeNode($symbol)
             : null;
     }
 
-    private function resolveImportedType(string $symbol): ?string
+    private function resolveImportedType(string $symbol): ?Type\IdentifierTypeNode
     {
         $alias = $symbol;
 
@@ -392,16 +386,26 @@ class TypeResolver
         }
 
         if ($aliases[$alias] === $symbol) {
-            return $symbol;
+            return new Type\IdentifierTypeNode($symbol);
         }
 
-        return rtrim("$aliases[$alias]\\$rest", '\\');
+        return new Type\IdentifierTypeNode(rtrim("$aliases[$alias]\\$rest", '\\'));
     }
 
-    private function resolveNamespacedType(string $symbol): ?string
+    private function resolveNamespacedType(string $symbol): ?Type\IdentifierTypeNode
     {
         $namespace = $this->importsResolver->getNamespace($this->scope);
 
-        return $namespace ? "$namespace\\$symbol" : null;
+        return $namespace ? $this->resolveClassLike("$namespace\\$symbol") : null;
+    }
+
+    private function resolveClassLike(string $symbol): ?Type\IdentifierTypeNode
+    {
+        return class_exists($symbol)
+            || trait_exists($symbol)
+            || interface_exists($symbol)
+            || enum_exists($symbol)
+            ? new Type\IdentifierTypeNode($symbol)
+            : null;
     }
 }

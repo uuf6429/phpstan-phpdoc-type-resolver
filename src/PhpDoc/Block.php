@@ -7,6 +7,7 @@ use PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocTagNode;
 use PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocTagValueNode;
 use PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocTextNode;
 use PHPStan\PhpDocParser\Ast\Type\TypeNode;
+use ReflectionException;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Factory;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Resolver;
 use uuf6429\PHPStanPHPDocTypeResolver\TypeResolver;
@@ -16,7 +17,7 @@ use uuf6429\PHPStanPHPDocTypeResolver\TypeResolver;
  */
 class Block
 {
-    private null|Resolver $genericTypes = null;
+    private null|Resolver $genericsResolver = null;
 
     /**
      * @param null|class-string $currentClass
@@ -24,7 +25,7 @@ class Block
     public function __construct(
         private readonly PhpDocNode   $docNode,
         private readonly TypeResolver $typeResolver,
-        private readonly Resolver     $genericsResolver,
+        private readonly Resolver     $inheritedGenericsResolver,
         private readonly Factory      $genericTypesExtractor,
         private readonly ?string      $currentClass,
     ) {
@@ -118,6 +119,7 @@ class Block
 
     /**
      * @return ($tag is null ? null : PhpDocTagValueNode)
+     * @throws ReflectionException
      */
     private function resolveTypesInTag(?PhpDocTagValueNode $tag): ?PhpDocTagValueNode
     {
@@ -127,19 +129,22 @@ class Block
 
         foreach (get_object_vars($tag) as $prop => $value) {
             if ($value instanceof TypeNode) {
-                $tag->$prop = $this->typeResolver->resolve($value, $this->getGenericResolver());
+                $tag->$prop = $this->typeResolver->resolve($value, $this->getGenericsResolver());
             }
         }
 
         return $tag;
     }
 
-    public function getGenericResolver(): Resolver
+    /**
+     * @throws ReflectionException
+     */
+    public function getGenericsResolver(): Resolver
     {
-        return $this->genericTypes
+        return $this->genericsResolver
             ?? (
-                $this->genericTypes = Resolver::createMerged(
-                    $this->genericsResolver,
+                $this->genericsResolver = Resolver::createMerged(
+                    $this->inheritedGenericsResolver,
                     $this->genericTypesExtractor->extractFromPhpDocNode($this->docNode, $this->currentClass),
                 )
             );

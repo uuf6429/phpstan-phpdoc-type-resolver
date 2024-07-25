@@ -7,14 +7,29 @@ use PHPStan\PhpDocParser\Ast\Type\TypeNode;
 class Resolver
 {
     /**
-     * @param array<string, TypeNode> $templateTypesMap A map of <template type> => <concrete type> entries.
-     * @param array<string, TypeNode> $definedTypesMap A map of <template type> => <concrete type> entries.
-     * @param array<string, TypeNode> $importedTypesMap A map of <template type> => <concrete type> entries.
+     * @var array<string, TypeNode>
+     */
+    private array $templateTypesMapCache;
+
+    /**
+     * @var array<string, TypeNode>
+     */
+    private array $definedTypesMapCache;
+
+    /**
+     * @var array<string, TypeNode>
+     */
+    private array $importedTypesMapCache;
+
+    /**
+     * @param iterable<string, TypeNode> $templateTypesMap A map of <template type> => <concrete type> entries.
+     * @param iterable<string, TypeNode> $definedTypesMap A map of <template type> => <concrete type> entries.
+     * @param iterable<string, TypeNode> $importedTypesMap A map of <template type> => <concrete type> entries.
      */
     public function __construct(
-        private array $templateTypesMap = [],
-        private array $definedTypesMap = [],
-        private array $importedTypesMap = [],
+        private readonly iterable $templateTypesMap = [],
+        private readonly iterable $definedTypesMap = [],
+        private readonly iterable $importedTypesMap = [],
         private readonly ResolverStateInterface $state = new ResolverValueState(isConcrete: true),
     ) {
         //
@@ -22,12 +37,13 @@ class Resolver
 
     public function setTemplateType(string $template, TypeNode $concrete): void
     {
-        $this->templateTypesMap[$template] = $concrete;
+        $this->getTemplateTypesMap();
+        $this->templateTypesMapCache[$template] = $concrete;
     }
 
     public function setTemplateTypeAt(int $index, TypeNode $concrete): void
     {
-        $this->setTemplateType(array_keys($this->templateTypesMap)[$index], $concrete);
+        $this->setTemplateType(array_keys($this->getTemplateTypesMap())[$index], $concrete);
     }
 
     /**
@@ -36,9 +52,9 @@ class Resolver
      */
     public function map(string $template): null|TypeNode
     {
-        $result = $this->templateTypesMap[$template]
-            ?? $this->definedTypesMap[$template]
-            ?? $this->importedTypesMap[$template]
+        $result = $this->getTemplateTypesMap()[$template]
+            ?? $this->getDefinedTypesMap()[$template]
+            ?? $this->getImportedTypesMap()[$template]
             ?? null;
 
         if ((string)$result === $template) {
@@ -59,10 +75,37 @@ class Resolver
     public static function createMerged(Resolver $first, Resolver $second): self
     {
         return new self(
-            array_merge($first->templateTypesMap, $second->templateTypesMap),
-            array_merge($first->definedTypesMap, $second->definedTypesMap),
-            array_merge($first->definedTypesMap, $second->definedTypesMap),
+            array_merge($first->getTemplateTypesMap(), $second->getTemplateTypesMap()),
+            array_merge($first->getDefinedTypesMap(), $second->getDefinedTypesMap()),
+            array_merge($first->getImportedTypesMap(), $second->getImportedTypesMap()),
             new ResolverRefState([$first->state, $second->state]),
         );
+    }
+
+    /**
+     * @return array<string, TypeNode>
+     */
+    private function getTemplateTypesMap(): array
+    {
+        return $this->templateTypesMapCache
+            ?? ($this->templateTypesMapCache = [...$this->templateTypesMap]);
+    }
+
+    /**
+     * @return array<string, TypeNode>
+     */
+    private function getDefinedTypesMap(): array
+    {
+        return $this->definedTypesMapCache
+            ?? ($this->definedTypesMapCache = [...$this->definedTypesMap]);
+    }
+
+    /**
+     * @return array<string, TypeNode>
+     */
+    private function getImportedTypesMap(): array
+    {
+        return $this->importedTypesMapCache
+            ?? ($this->importedTypesMapCache = [...$this->importedTypesMap]);
     }
 }

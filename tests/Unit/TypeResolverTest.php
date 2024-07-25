@@ -21,6 +21,7 @@ use Reflector;
 use RuntimeException;
 use SplFileInfo;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Factory;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Resolver;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Scope;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\ConcreteGenericTypeNode;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\TemplateGenericTypeNode;
@@ -28,7 +29,6 @@ use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\VirtualTypeNode;
 use uuf6429\PHPStanPHPDocTypeResolver\TypeResolver;
 use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures;
 use uuf6429\PHPStanPHPDocTypeResolverTests\ReflectsValuesTrait;
-
 use function uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\getTypeResolverTestClosureReturningImportedType;
 use function uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\getTypeResolverTestClosureReturningString;
 
@@ -52,6 +52,32 @@ class TypeResolverTest extends TestCase
      */
     public static function returnTypeDataProvider(): iterable
     {
+        $colorsVirtualType = new VirtualTypeNode(
+            name: 'TColors',
+            type: new Type\ArrayShapeNode(
+                items: [
+                    new Type\ArrayShapeItemNode(
+                        keyName: new Type\IdentifierTypeNode('red'),
+                        optional: false,
+                        valueType: new Type\ConstTypeNode(constExpr: new ConstExprStringNode('#F00')),
+                    ),
+                    new Type\ArrayShapeItemNode(
+                        keyName: new Type\IdentifierTypeNode('green'),
+                        optional: false,
+                        valueType: new Type\ConstTypeNode(constExpr: new ConstExprStringNode('#0F0')),
+                    ),
+                    new Type\ArrayShapeItemNode(
+                        keyName: new Type\IdentifierTypeNode('blue'),
+                        optional: false,
+                        valueType: new Type\ConstTypeNode(constExpr: new ConstExprStringNode('#00F')),
+                    ),
+                ],
+                sealed: true,
+                kind: 'array',
+            ),
+            declaringClass: Fixtures\TypeResolverTestFixture::class,
+        );
+
         yield 'return void' => [
             'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnVoid']),
             'expectedReturnType' => new Type\IdentifierTypeNode('void'),
@@ -218,33 +244,16 @@ class TypeResolverTest extends TestCase
             'expectedReturnType' => new Type\UnionTypeNode([
                 new Type\IdentifierTypeNode('null'),
                 new Type\OffsetAccessTypeNode(
-                    // TODO key-of below is wrong, it should be a more specialized (parsed) node, but it probably won't impact us much in the short term.
-                    type: new Type\IdentifierTypeNode('key-of<TColors>'),
-                    offset: new VirtualTypeNode(
-                        name: 'TColors',
-                        type: new Type\ArrayShapeNode(
-                            items: [
-                                new Type\ArrayShapeItemNode(
-                                    keyName: new Type\IdentifierTypeNode('red'),
-                                    optional: false,
-                                    valueType: new Type\ConstTypeNode(constExpr: new ConstExprStringNode('#F00')),
-                                ),
-                                new Type\ArrayShapeItemNode(
-                                    keyName: new Type\IdentifierTypeNode('green'),
-                                    optional: false,
-                                    valueType: new Type\ConstTypeNode(constExpr: new ConstExprStringNode('#0F0')),
-                                ),
-                                new Type\ArrayShapeItemNode(
-                                    keyName: new Type\IdentifierTypeNode('blue'),
-                                    optional: false,
-                                    valueType: new Type\ConstTypeNode(constExpr: new ConstExprStringNode('#00F')),
-                                ),
-                            ],
-                            sealed: true,
-                            kind: 'array',
-                        ),
-                        declaringClass: Fixtures\TypeResolverTestFixture::class,
+                    type: new ConcreteGenericTypeNode(
+                        type: new Type\IdentifierTypeNode('key-of'),
+                        genericTypes: [
+                            $colorsVirtualType,
+                        ],
+                        variances: [
+                            'invariant',
+                        ],
                     ),
+                    offset: $colorsVirtualType,
                 ),
             ]),
         ];
@@ -444,7 +453,7 @@ class TypeResolverTest extends TestCase
 
     public function testThatInvalidTypeIsIgnored(): void
     {
-        $scope = new Scope(null, null, null, '');
+        $scope = new Scope(null, null, null, '', new Resolver());
         $typeResolver = new TypeResolver($scope);
         $invalidType = new Type\InvalidTypeNode(new ParserException('', 0, 0, 0));
 
@@ -455,7 +464,7 @@ class TypeResolverTest extends TestCase
 
     public function testThatUnsupportedTypesTriggerException(): void
     {
-        $scope = new Scope(null, null, null, '');
+        $scope = new Scope(null, null, null, '', new Resolver());
         $typeResolver = new TypeResolver($scope);
         $unsupportedType = $this->createMock(Type\TypeNode::class);
 

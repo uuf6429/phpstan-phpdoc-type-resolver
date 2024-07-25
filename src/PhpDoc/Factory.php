@@ -82,9 +82,9 @@ class Factory
                     ),
                 ),
             ),
-            new TypeResolver($scope, $this->phpImportsResolver),
+            $typeResolver = new TypeResolver($scope, $this->phpImportsResolver),
             $scope->genericsResolver,
-            $this->genericsResolverFactory,
+            $this->genericsResolverFactory->withResolvers($typeResolver, $scope->genericsResolver),
             $scope->class,
         );
     }

@@ -75,17 +75,16 @@ class Factory
     public function createFromScope(Scope $scope): Block
     {
         return new Block(
-            $this->parser->parse(
+            scope: $scope,
+            docNode: $this->parser->parse(
                 new PhpDocParser\Parser\TokenIterator(
                     $this->lexer->tokenize(
                         trim($scope->comment) ? $scope->comment : "/**\n */",
                     ),
                 ),
             ),
-            $typeResolver = new TypeResolver($scope, $this->phpImportsResolver),
-            $scope->genericsResolver,
-            $this->genericsResolverFactory->withResolvers($typeResolver, $scope->genericsResolver),
-            $scope->class,
+            typeResolver: $typeResolver = new TypeResolver($this->genericsResolverFactory, $this->phpImportsResolver),
+            genericTypesExtractor: $this->genericsResolverFactory->withResolvers($typeResolver, $scope->genericsResolver),
         );
     }
 }

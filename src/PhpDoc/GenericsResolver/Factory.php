@@ -2,6 +2,7 @@
 
 namespace uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver;
 
+use InvalidArgumentException;
 use PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocNode;
 use PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocTagNode;
 use PHPStan\PhpDocParser\Ast\PhpDoc\TemplateTagValueNode;
@@ -15,13 +16,17 @@ use ReflectionFunction;
 use ReflectionMethod;
 use Reflector;
 use RuntimeException;
+use uuf6429\PHPStanPHPDocTypeResolver\IsClassLike;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Factory as PhpDocFactory;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Scope;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\TemplateTypeNode;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\TypeDefTypeNode;
 use uuf6429\PHPStanPHPDocTypeResolver\TypeResolver;
 
 class Factory
 {
+    use IsClassLike;
+
     /**
      * @var array<string, Resolver>
      */
@@ -43,6 +48,18 @@ class Factory
     /**
      * @throws ReflectionException
      */
+    public function extractFromClassName(string $className): Resolver
+    {
+        if (!$this->isClassLike($className)) {
+            throw new InvalidArgumentException("Class, interface, trait or enum does not exist: $className");
+        }
+
+        return $this->extractFromReflector(new ReflectionClass($className));
+    }
+
+    /**
+     * @throws ReflectionException
+     */
     public function extractFromReflector(Reflector $reflector): Resolver
     {
         return ($cacheKey = $this->makeCacheKey($reflector))
@@ -54,12 +71,12 @@ class Factory
      * @param null|class-string $currentClass
      * @throws ReflectionException
      */
-    public function extractFromPhpDocNode(PhpDocNode $docNode, null|string $currentClass): Resolver
+    public function extractFromPhpDocNode(Scope $scope, PhpDocNode $docNode, null|string $currentClass): Resolver
     {
         return new Resolver(
-            $this->getExtractorForTemplateTags($docNode),
-            $this->getExtractorForTypeDefTags($docNode, $currentClass),
-            $this->getExtractorForTypeImportTags($docNode),
+            $this->getExtractorForTemplateTags($scope, $docNode),
+            $this->getExtractorForTypeDefTags($scope, $docNode, $currentClass),
+            $this->getExtractorForTypeImportTags($scope, $docNode),
         );
     }
 
@@ -83,7 +100,7 @@ class Factory
     /**
      * @return iterable<string, TypeNode>
      */
-    private function getExtractorForTemplateTags(PhpDocNode $docNode): iterable
+    private function getExtractorForTemplateTags(Scope $scope, PhpDocNode $docNode): iterable
     {
         /** @var list<PhpDocTagNode<TemplateTagValueNode>> $tags */
         $tags = array_merge(
@@ -94,7 +111,7 @@ class Factory
             yield $tag->value->name => new TemplateTypeNode(
                 name: $tag->value->name,
                 bound: $tag->value->bound
-                    ? $this->getTypeResolver()->resolve($tag->value->bound, $this->getGenericsResolver())
+                    ? $this->getTypeResolver()->resolve($scope, $tag->value->bound, $this->getGenericsResolver())
                     : null,
             );
         }
@@ -104,7 +121,7 @@ class Factory
      * @param null|class-string $currentClass
      * @return iterable<string, TypeNode>
      */
-    private function getExtractorForTypeDefTags(PhpDocNode $docNode, null|string $currentClass): iterable
+    private function getExtractorForTypeDefTags(Scope $scope, PhpDocNode $docNode, null|string $currentClass): iterable
     {
         /** @var list<PhpDocTagNode<TypeAliasTagValueNode>> $tags */
         $tags = $docNode->getTagsByName('@phpstan-type');
@@ -114,7 +131,7 @@ class Factory
         foreach ($tags as $tag) {
             yield $tag->value->alias => new TypeDefTypeNode(
                 name: $tag->value->alias,
-                type: $this->getTypeResolver()->resolve($tag->value->type, $this->getGenericsResolver()),
+                type: $this->getTypeResolver()->resolve($scope, $tag->value->type, $this->getGenericsResolver()),
                 declaringClass: $currentClass,
             );
         }
@@ -124,7 +141,7 @@ class Factory
      * @return iterable<string, TypeNode>
      * @throws ReflectionException
      */
-    private function getExtractorForTypeImportTags(PhpDocNode $docNode): iterable
+    private function getExtractorForTypeImportTags(Scope $scope, PhpDocNode $docNode): iterable
     {
         /** @var list<PhpDocTagNode<TypeAliasImportTagValueNode>> $tags */
         $tags = $docNode->getTagsByName('@phpstan-import-type');
@@ -133,7 +150,8 @@ class Factory
             yield $name => new TypeDefTypeNode(
                 name: $name,
                 type: $this->getLocalTypeFromClass(
-                    $this->getNodeClass($this->getTypeResolver()->resolve($tag->value->importedFrom, $this->getGenericsResolver())),
+                    $scope,
+                    $this->getNodeClass($this->getTypeResolver()->resolve($scope, $tag->value->importedFrom, $this->getGenericsResolver())),
                     $tag->value->importedAlias,
                 ),
                 declaringClass: $tag->value->importedFrom->name,
@@ -145,14 +163,14 @@ class Factory
      * @param class-string $className
      * @throws ReflectionException
      */
-    private function getLocalTypeFromClass(string $className, string $typeName): TypeNode
+    private function getLocalTypeFromClass(Scope $scope, string $className, string $typeName): TypeNode
     {
         $block = $this->factory->createFromReflector(new ReflectionClass($className));
         /** @var list<TypeAliasTagValueNode> $tags */
         $tags = $block->getTags('@phpstan-type');
         foreach ($tags as $tag) {
             if ($tag->alias === $typeName) {
-                return $this->getTypeResolver()->resolve($tag->type, $this->getGenericsResolver());
+                return $this->getTypeResolver()->resolve($scope, $tag->type, $this->getGenericsResolver());
             }
         }
         throw new RuntimeException("A `@phpstan-type $typeName` PHPDoc tag was expected on class `$className`, but none was found");

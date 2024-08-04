@@ -92,8 +92,8 @@ $docBlock = $parser->parse(
 );
 
 // Finally, we initialize the type resolver and resolve the first return type of the doc block
-$typeResolver = new \uuf6429\PHPStanPHPDocTypeResolver\TypeResolver($scope);
-$finalReturnType = $typeResolver->resolve($docBlock->getReturnTagValues()[0]->type);
+$typeResolver = new \uuf6429\PHPStanPHPDocTypeResolver\TypeResolver();
+$finalReturnType = $typeResolver->resolve($scope, $docBlock->getReturnTagValues()[0]->type);
 ```
 
 ### 🤪 Via Source Strings

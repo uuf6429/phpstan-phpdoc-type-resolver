@@ -3,6 +3,8 @@
 namespace uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types;
 
 use PHPStan\PhpDocParser\Ast\Type\GenericTypeNode;
+use PHPStan\PhpDocParser\Ast\Type\IdentifierTypeNode;
+use PHPStan\PhpDocParser\Ast\Type\TypeNode;
 use uuf6429\PHPStanPHPDocTypeResolver\TypeResolver;
 
 /**
@@ -11,5 +13,13 @@ use uuf6429\PHPStanPHPDocTypeResolver\TypeResolver;
  */
 class TemplateGenericTypeNode extends GenericTypeNode
 {
-    //
+    /**
+     * @param TypeNode[] $templateTypes
+     * @param TypeNode[] $genericTypes
+     * @param (self::VARIANCE_*)[] $variances
+     */
+    public function __construct(IdentifierTypeNode $type, public array $templateTypes, array $genericTypes, array $variances = [])
+    {
+        parent::__construct($type, $genericTypes, $variances);
+    }
 }

@@ -165,6 +165,9 @@ class TypeResolverTest extends TestCase
                     optional: false,
                     valueType: new ConcreteGenericTypeNode(
                         type: new Type\IdentifierTypeNode('list'),
+                        templateTypes: [
+                            new Type\IdentifierTypeNode('$value'),
+                        ],
                         genericTypes: [
                             new Type\IdentifierTypeNode(Fixtures\Cases\Case1::class),
                         ],
@@ -213,10 +216,14 @@ class TypeResolverTest extends TestCase
             ),
         ];
 
-        yield 'return int range' => [
+        yield 'return random int from range' => [
             'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnRandomInt']),
             'expectedReturnType' => new ConcreteGenericTypeNode(
                 type: new Type\IdentifierTypeNode('int'),
+                templateTypes: [
+                    new Type\IdentifierTypeNode('$min'),
+                    new Type\IdentifierTypeNode('$max'),
+                ],
                 genericTypes: [
                     new Type\ConstTypeNode(new ConstExprIntegerNode('0')),
                     new Type\IdentifierTypeNode('max'),
@@ -232,6 +239,9 @@ class TypeResolverTest extends TestCase
             'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'createClass']),
             'expectedReturnType' => new ConcreteGenericTypeNode(
                 type: new Type\IdentifierTypeNode('new'),
+                templateTypes: [
+                    new Type\IdentifierTypeNode('$class'),
+                ],
                 genericTypes: [
                     new TemplateTypeNode(
                         name: 'T',
@@ -253,6 +263,9 @@ class TypeResolverTest extends TestCase
                         name: 'TColorKey',
                         bound: new ConcreteGenericTypeNode(
                             type: new Type\IdentifierTypeNode('key-of'),
+                            templateTypes: [
+                                new Type\IdentifierTypeNode('TColors'),
+                            ],
                             genericTypes: [
                                 $colorsTypeDef,
                             ],
@@ -330,6 +343,9 @@ class TypeResolverTest extends TestCase
             'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnAllClassConstants']),
             'expectedReturnType' => new ConcreteGenericTypeNode(
                 type: new Type\IdentifierTypeNode('list'),
+                templateTypes: [
+                    new Type\IdentifierTypeNode('$value'),
+                ],
                 genericTypes: [
                     new Type\ConstTypeNode(
                         constExpr: new ConstFetchNode(
@@ -353,6 +369,12 @@ class TypeResolverTest extends TestCase
             'reflector' => self::reflectMethod([Fixtures\Payload::class, 'makeNumberPayload']),
             'expectedReturnType' => new ConcreteGenericTypeNode(
                 type: new Type\IdentifierTypeNode(Fixtures\Payload::class),
+                templateTypes: [
+                    new TemplateTypeNode(
+                        name: 'T',
+                        bound: null,
+                    ),
+                ],
                 genericTypes: [
                     new Type\IdentifierTypeNode(Fixtures\Number::class),
                 ],
@@ -366,9 +388,21 @@ class TypeResolverTest extends TestCase
             'reflector' => self::reflectMethod([Fixtures\Payload::class, 'makePayloadPayload']),
             'expectedReturnType' => new TemplateGenericTypeNode(
                 type: new Type\IdentifierTypeNode(Fixtures\Payload::class),
+                templateTypes: [
+                    new TemplateTypeNode(
+                        name: 'T',
+                        bound: null,
+                    ),
+                ],
                 genericTypes: [
                     new TemplateGenericTypeNode(
                         type: new Type\IdentifierTypeNode(Fixtures\Payload::class),
+                        templateTypes: [
+                            new TemplateTypeNode(
+                                name: 'T',
+                                bound: null,
+                            ),
+                        ],
                         genericTypes: [
                             new TemplateTypeNode(
                                 name: 'T',
@@ -390,6 +424,16 @@ class TypeResolverTest extends TestCase
             'reflector' => self::reflectMethod([Fixtures\Pair::class, 'makeArrayString']),
             'expectedReturnType' => new ConcreteGenericTypeNode(
                 type: new Type\IdentifierTypeNode(Fixtures\Pair::class),
+                templateTypes: [
+                    new TemplateTypeNode(
+                        name: 'TLeft',
+                        bound: new Type\IdentifierTypeNode('mixed'),
+                    ),
+                    new TemplateTypeNode(
+                        name: 'TRight',
+                        bound: new Type\IdentifierTypeNode('mixed'),
+                    ),
+                ],
                 genericTypes: [
                     new Type\IdentifierTypeNode('int'),
                     new Type\IdentifierTypeNode('string'),
@@ -405,6 +449,16 @@ class TypeResolverTest extends TestCase
             'reflector' => self::reflectMethod([Fixtures\Pair::class, 'makeArrayValue']),
             'expectedReturnType' => new ConcreteGenericTypeNode(
                 type: new Type\IdentifierTypeNode(Fixtures\Pair::class),
+                templateTypes: [
+                    new TemplateTypeNode(
+                        name: 'TLeft',
+                        bound: new Type\IdentifierTypeNode('mixed'),
+                    ),
+                    new TemplateTypeNode(
+                        name: 'TRight',
+                        bound: new Type\IdentifierTypeNode('mixed'),
+                    ),
+                ],
                 genericTypes: [
                     new Type\IdentifierTypeNode('int'),
                     new TemplateTypeNode(
@@ -423,6 +477,16 @@ class TypeResolverTest extends TestCase
             'reflector' => self::reflectMethod([Fixtures\Pair::class, 'makeTwins']),
             'expectedReturnType' => new ConcreteGenericTypeNode(
                 type: new Type\IdentifierTypeNode(Fixtures\Pair::class),
+                templateTypes: [
+                    new TemplateTypeNode(
+                        name: 'TLeft',
+                        bound: new Type\IdentifierTypeNode('mixed'),
+                    ),
+                    new TemplateTypeNode(
+                        name: 'TRight',
+                        bound: new Type\IdentifierTypeNode('mixed'),
+                    ),
+                ],
                 genericTypes: [
                     new TemplateTypeNode(
                         name: 'TTwinType',
@@ -444,6 +508,9 @@ class TypeResolverTest extends TestCase
             'reflector' => self::reflectMethod([Fixtures\TypeResolverChildTestFixture::class, 'getSimilarItems']),
             'expectedReturnType' => new TemplateGenericTypeNode(
                 type: new Type\IdentifierTypeNode('list'),
+                templateTypes: [
+                    new Type\IdentifierTypeNode('$value'),
+                ],
                 genericTypes: [
                     new TemplateTypeNode(
                         name: 'TItem',
@@ -477,10 +544,10 @@ class TypeResolverTest extends TestCase
     public function testThatInvalidTypeIsIgnored(): void
     {
         $scope = new Scope(null, null, null, '', new Resolver());
-        $typeResolver = new TypeResolver($scope);
+        $typeResolver = new TypeResolver();
         $invalidType = new Type\InvalidTypeNode(new ParserException('', 0, 0, 0));
 
-        $processedType = $typeResolver->resolve($invalidType);
+        $processedType = $typeResolver->resolve($scope, $invalidType);
 
         $this->assertSame($invalidType, $processedType);
     }
@@ -488,13 +555,13 @@ class TypeResolverTest extends TestCase
     public function testThatUnsupportedTypesTriggerException(): void
     {
         $scope = new Scope(null, null, null, '', new Resolver());
-        $typeResolver = new TypeResolver($scope);
+        $typeResolver = new TypeResolver();
         $unsupportedType = $this->createMock(Type\TypeNode::class);
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Cannot resolve related types, type is unsupported: ' . get_class($unsupportedType));
 
-        $typeResolver->resolve($unsupportedType);
+        $typeResolver->resolve($scope, $unsupportedType);
     }
 
     public function testThatParentlessClassCannotResolveParent(): void

@@ -7,8 +7,11 @@ use PHPStan\PhpDocParser\Ast\ConstExpr;
 use PHPStan\PhpDocParser\Ast\PhpDoc;
 use PHPStan\PhpDocParser\Ast\Type;
 use PHPStan\PhpDocParser\Ast\Type\CallableTypeParameterNode;
+use PHPStan\PhpDocParser\Ast\Type\TypeNode;
+use ReflectionException;
 use RuntimeException;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Factory as PhpDocFactory;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Factory as GenericsResolverFactory;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Resolver as GenericsResolver;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Scope;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\ConcreteGenericTypeNode;
@@ -21,6 +24,8 @@ use uuf6429\PHPStanPHPDocTypeResolver\PhpImports\Resolver as PhpImportsResolver;
  */
 class TypeResolver
 {
+    use IsClassLike;
+
     /**
      * @see https://phpstan.org/writing-php-code/phpdoc-types
      */
@@ -49,22 +54,22 @@ class TypeResolver
 
     private const RELATIVE_TYPES = ['self', 'static', '$this', 'parent'];
 
-    private const RANGE_TYPES =  ['int'];
+    private const RANGE_TYPES = ['int'];
 
-    private const RANGE_UTILITY_TYPES =  ['min', 'max'];
+    private const RANGE_UTILITY_TYPES = ['min', 'max'];
 
     private const GENERIC_UTILITY_TYPES = ['new'];
 
     public function __construct(
-        private readonly Scope    $scope,
-        private readonly PhpImportsResolver $importsResolver = new PhpImportsResolver(),
+        private readonly GenericsResolverFactory $genericsResolverFactory = new GenericsResolverFactory(new PhpDocFactory()),
+        private readonly PhpImportsResolver      $importsResolver = new PhpImportsResolver(),
     ) {
         //
     }
 
-    public function resolve(Type\TypeNode $type, GenericsResolver $genericResolver = new GenericsResolver()): Type\TypeNode
+    public function resolve(Scope $scope, Type\TypeNode $type, GenericsResolver $genericResolver = new GenericsResolver()): Type\TypeNode
     {
-        return $this->resolveType($type, $genericResolver, Type\TypeNode::class, false);
+        return $this->resolveType($scope, $type, $genericResolver, Type\TypeNode::class, false);
     }
 
     /**
@@ -72,7 +77,7 @@ class TypeResolver
      * @param class-string<T> $asClass
      * @return ($nullable is true ? ?T : T)
      */
-    private function resolveType(mixed $orig, GenericsResolver $genericResolver, string $asClass, bool $nullable)
+    private function resolveType(Scope $scope, mixed $orig, GenericsResolver $genericResolver, string $asClass, bool $nullable)
     {
         $constExpr = $orig instanceof Type\ConstTypeNode ? $orig->constExpr : null;
         if ($orig instanceof Type\CallableTypeNode) {
@@ -92,13 +97,13 @@ class TypeResolver
             => new Type\ArrayShapeItemNode(
                 keyName: $orig->keyName,
                 optional: $orig->optional,
-                valueType: $this->resolveType($orig->valueType, $genericResolver, Type\TypeNode::class, false),
+                valueType: $this->resolveType($scope, $orig->valueType, $genericResolver, Type\TypeNode::class, false),
             ),
 
             $orig instanceof Type\ArrayShapeNode
             => new Type\ArrayShapeNode(
                 items: array_map(
-                    fn(Type\ArrayShapeItemNode $item): Type\ArrayShapeItemNode => $this->resolveType($item, $genericResolver, Type\ArrayShapeItemNode::class, false),
+                    fn(Type\ArrayShapeItemNode $item): Type\ArrayShapeItemNode => $this->resolveType($scope, $item, $genericResolver, Type\ArrayShapeItemNode::class, false),
                     $orig->items,
                 ),
                 sealed: $orig->sealed,
@@ -107,19 +112,19 @@ class TypeResolver
 
             $orig instanceof Type\ArrayTypeNode
             => new Type\ArrayTypeNode(
-                type: $this->resolveType($orig->type, $genericResolver, Type\TypeNode::class, false),
+                type: $this->resolveType($scope, $orig->type, $genericResolver, Type\TypeNode::class, false),
             ),
 
             $orig instanceof Type\CallableTypeNode
             => new Type\CallableTypeNode(
-                identifier: $this->resolveType($orig->identifier, $genericResolver, Type\IdentifierTypeNode::class, false),
+                identifier: $this->resolveType($scope, $orig->identifier, $genericResolver, Type\IdentifierTypeNode::class, false),
                 parameters: array_map(
-                    fn(Type\CallableTypeParameterNode $item): Type\CallableTypeParameterNode => $this->resolveType($item, $genericResolver, CallableTypeParameterNode::class, false),
+                    fn(Type\CallableTypeParameterNode $item): Type\CallableTypeParameterNode => $this->resolveType($scope, $item, $genericResolver, CallableTypeParameterNode::class, false),
                     $orig->parameters,
                 ),
-                returnType: $this->resolveType($orig->returnType, $genericResolver, Type\TypeNode::class, false),
+                returnType: $this->resolveType($scope, $orig->returnType, $genericResolver, Type\TypeNode::class, false),
                 templateTypes: array_map(
-                    fn(PhpDoc\TemplateTagValueNode $item): PhpDoc\TemplateTagValueNode => $this->resolveType($item, $genericResolver, PhpDoc\TemplateTagValueNode::class, false),
+                    fn(PhpDoc\TemplateTagValueNode $item): PhpDoc\TemplateTagValueNode => $this->resolveType($scope, $item, $genericResolver, PhpDoc\TemplateTagValueNode::class, false),
                     $orig->templateTypes,
                 ),
             ),
@@ -127,18 +132,18 @@ class TypeResolver
             $orig instanceof Type\ConditionalTypeForParameterNode
             => new Type\ConditionalTypeForParameterNode(
                 parameterName: $orig->parameterName,
-                targetType: $this->resolveType($orig->targetType, $genericResolver, Type\TypeNode::class, false),
-                if: $this->resolveType($orig->if, $genericResolver, Type\TypeNode::class, false),
-                else: $this->resolveType($orig->else, $genericResolver, Type\TypeNode::class, false),
+                targetType: $this->resolveType($scope, $orig->targetType, $genericResolver, Type\TypeNode::class, false),
+                if: $this->resolveType($scope, $orig->if, $genericResolver, Type\TypeNode::class, false),
+                else: $this->resolveType($scope, $orig->else, $genericResolver, Type\TypeNode::class, false),
                 negated: $orig->negated,
             ),
 
             $orig instanceof Type\ConditionalTypeNode
             => new Type\ConditionalTypeNode(
-                subjectType: $this->resolveType($orig->subjectType, $genericResolver, Type\TypeNode::class, false),
-                targetType: $this->resolveType($orig->targetType, $genericResolver, Type\TypeNode::class, false),
-                if: $this->resolveType($orig->if, $genericResolver, Type\TypeNode::class, false),
-                else: $this->resolveType($orig->else, $genericResolver, Type\TypeNode::class, false),
+                subjectType: $this->resolveType($scope, $orig->subjectType, $genericResolver, Type\TypeNode::class, false),
+                targetType: $this->resolveType($scope, $orig->targetType, $genericResolver, Type\TypeNode::class, false),
+                if: $this->resolveType($scope, $orig->if, $genericResolver, Type\TypeNode::class, false),
+                else: $this->resolveType($scope, $orig->else, $genericResolver, Type\TypeNode::class, false),
                 negated: $orig->negated,
             ),
 
@@ -156,8 +161,8 @@ class TypeResolver
                 $constExpr instanceof ConstExpr\ConstExprArrayItemNode
                 => new Type\ConstTypeNode(
                     constExpr: new ConstExpr\ConstExprArrayItemNode(
-                        key: $this->resolveType($constExpr->key, $genericResolver, ConstExpr\ConstExprNode::class, true),
-                        value: $this->resolveType($constExpr->value, $genericResolver, ConstExpr\ConstExprNode::class, false),
+                        key: $this->resolveType($scope, $constExpr->key, $genericResolver, ConstExpr\ConstExprNode::class, true),
+                        value: $this->resolveType($scope, $constExpr->value, $genericResolver, ConstExpr\ConstExprNode::class, false),
                     ),
                 ),
 
@@ -165,7 +170,7 @@ class TypeResolver
                 => new Type\ConstTypeNode(
                     constExpr: new ConstExpr\ConstExprArrayNode(
                         items: array_map(
-                            fn(ConstExpr\ConstExprArrayItemNode $item): ConstExpr\ConstExprArrayItemNode => $this->resolveType($item, $genericResolver, ConstExpr\ConstExprArrayItemNode::class, false),
+                            fn(ConstExpr\ConstExprArrayItemNode $item): ConstExpr\ConstExprArrayItemNode => $this->resolveType($scope, $item, $genericResolver, ConstExpr\ConstExprArrayItemNode::class, false),
                             $constExpr->items,
                         ),
                     ),
@@ -174,7 +179,7 @@ class TypeResolver
                 $constExpr instanceof ConstExpr\ConstFetchNode
                 => new Type\ConstTypeNode(
                     constExpr: new ConstExpr\ConstFetchNode(
-                        className: ($resolved = $this->resolveIdentifier($constExpr->className, $genericResolver)) instanceof Type\IdentifierTypeNode
+                        className: ($resolved = $this->resolveIdentifier($scope, $constExpr->className, $genericResolver)) instanceof Type\IdentifierTypeNode
                             ? $resolved->name
                             : throw new LogicException('Expected identifier node, but ' . get_debug_type($resolved) . ' was received'),
                         name: $constExpr->name,
@@ -186,60 +191,60 @@ class TypeResolver
             },
 
             $orig instanceof Type\GenericTypeNode
-            => $this->resolveGenericType($orig, $genericResolver),
+            => $this->resolveGenericType($scope, $orig, $genericResolver),
 
             $orig instanceof Type\IdentifierTypeNode
-            => $this->resolveIdentifier($orig->name, $genericResolver),
+            => $this->resolveIdentifier($scope, $orig->name, $genericResolver),
 
             $orig instanceof Type\IntersectionTypeNode
             => new Type\IntersectionTypeNode(
                 types: array_map(
-                    fn(Type\TypeNode $item): Type\TypeNode => $this->resolveType($item, $genericResolver, Type\TypeNode::class, false),
+                    fn(Type\TypeNode $item): Type\TypeNode => $this->resolveType($scope, $item, $genericResolver, Type\TypeNode::class, false),
                     $orig->types,
                 ),
             ),
 
             $orig instanceof Type\NullableTypeNode
             => new Type\NullableTypeNode(
-                type: $this->resolveType($orig->type, $genericResolver, Type\TypeNode::class, false),
+                type: $this->resolveType($scope, $orig->type, $genericResolver, Type\TypeNode::class, false),
             ),
 
             $orig instanceof Type\ObjectShapeItemNode
             => new Type\ObjectShapeItemNode(
                 keyName: $orig->keyName,
                 optional: $orig->optional,
-                valueType: $this->resolveType($orig->valueType, $genericResolver, Type\TypeNode::class, false),
+                valueType: $this->resolveType($scope, $orig->valueType, $genericResolver, Type\TypeNode::class, false),
             ),
 
             $orig instanceof Type\ObjectShapeNode
             => new Type\ObjectShapeNode(
                 items: array_map(
-                    fn(Type\ObjectShapeItemNode $item): Type\ObjectShapeItemNode => $this->resolveType($item, $genericResolver, Type\ObjectShapeItemNode::class, false),
+                    fn(Type\ObjectShapeItemNode $item): Type\ObjectShapeItemNode => $this->resolveType($scope, $item, $genericResolver, Type\ObjectShapeItemNode::class, false),
                     $orig->items,
                 ),
             ),
 
             $orig instanceof Type\OffsetAccessTypeNode
             => new Type\OffsetAccessTypeNode(
-                type: $this->resolveType($orig->offset, $genericResolver, Type\TypeNode::class, false),
-                offset: $this->resolveType($orig->type, $genericResolver, Type\TypeNode::class, false),
+                type: $this->resolveType($scope, $orig->offset, $genericResolver, Type\TypeNode::class, false),
+                offset: $this->resolveType($scope, $orig->type, $genericResolver, Type\TypeNode::class, false),
             ),
 
             $orig instanceof Type\ThisTypeNode
-            => $this->resolveRelativeTypes('$this')
+            => $this->resolveRelativeTypes($scope, '$this')
                 ?? throw new LogicException('The `$this` type should always be resolved'),
 
             $orig instanceof Type\UnionTypeNode
             => new Type\UnionTypeNode(
                 types: array_map(
-                    fn(Type\TypeNode $item): Type\TypeNode => $this->resolveType($item, $genericResolver, Type\TypeNode::class, false),
+                    fn(Type\TypeNode $item): Type\TypeNode => $this->resolveType($scope, $item, $genericResolver, Type\TypeNode::class, false),
                     $orig->types,
                 ),
             ),
 
             $orig instanceof Type\CallableTypeParameterNode
             => new Type\CallableTypeParameterNode(
-                type: $this->resolveType($orig->type, $genericResolver, Type\TypeNode::class, false),
+                type: $this->resolveType($scope, $orig->type, $genericResolver, Type\TypeNode::class, false),
                 isReference: $orig->isReference,
                 isVariadic: $orig->isVariadic,
                 parameterName: $orig->parameterName,
@@ -249,9 +254,9 @@ class TypeResolver
             $orig instanceof PhpDoc\TemplateTagValueNode
             => new PhpDoc\TemplateTagValueNode(
                 name: $orig->name,
-                bound: $this->resolveType($orig->bound, $genericResolver, Type\TypeNode::class, true),
+                bound: $this->resolveType($scope, $orig->bound, $genericResolver, Type\TypeNode::class, true),
                 description: $orig->description ?: '',
-                default: $this->resolveType($orig->default, $genericResolver, Type\TypeNode::class, true),
+                default: $this->resolveType($scope, $orig->default, $genericResolver, Type\TypeNode::class, true),
             ),
 
             default
@@ -266,45 +271,47 @@ class TypeResolver
         return $result;
     }
 
-    private function resolveGenericType(Type\GenericTypeNode $orig, GenericsResolver $genericResolver): Type\GenericTypeNode
+    private function resolveGenericType(Scope $scope, Type\GenericTypeNode $orig, GenericsResolver $genericResolver): Type\GenericTypeNode
     {
         return in_array($orig->type->name, self::BASIC_TYPES)
-            ? $this->resolveGenericBasicType($orig, $genericResolver)
-            : $this->resolveGenericClassType($orig, $genericResolver);
+            ? $this->resolveGenericBasicType($scope, $orig, $genericResolver)
+            : $this->resolveGenericClassType($scope, $orig, $genericResolver);
     }
 
-    private function resolveGenericBasicType(Type\GenericTypeNode $orig, GenericsResolver $genericResolver): TemplateGenericTypeNode|ConcreteGenericTypeNode
+    private function resolveGenericBasicType(Scope $scope, Type\GenericTypeNode $orig, GenericsResolver $genericResolver): TemplateGenericTypeNode|ConcreteGenericTypeNode
     {
         $isIntRange = $orig->type instanceof Type\IdentifierTypeNode && in_array($orig->type->name, self::RANGE_TYPES);
         $isGenericUtilityType = $orig->type instanceof Type\IdentifierTypeNode && in_array($orig->type->name, self::GENERIC_UTILITY_TYPES);
 
-        $convertedType = $isGenericUtilityType ? $orig->type : $this->resolveType($orig->type, $genericResolver, Type\IdentifierTypeNode::class, false);
+        $convertedType = $isGenericUtilityType ? $orig->type : $this->resolveType($scope, $orig->type, $genericResolver, Type\IdentifierTypeNode::class, false);
         $convertedGenericTypes = array_map(
             fn(Type\TypeNode $item): Type\TypeNode => ($isIntRange && $item instanceof Type\IdentifierTypeNode && in_array($item->name, self::RANGE_UTILITY_TYPES))
-                ? $item : $this->resolveType($item, $genericResolver, Type\TypeNode::class, false),
+                ? $item : $this->resolveType($scope, $item, $genericResolver, Type\TypeNode::class, false),
             $orig->genericTypes,
         );
 
         return $genericResolver->hasMappedTemplateType()
             ? new TemplateGenericTypeNode(
                 type: $convertedType,
+                templateTypes: $this->getOriginalTemplateTypes($orig, $convertedType),
                 genericTypes: $convertedGenericTypes,
                 variances: $orig->variances,
             )
             : new ConcreteGenericTypeNode(
                 type: $convertedType,
+                templateTypes: $this->getOriginalTemplateTypes($orig, $convertedType),
                 genericTypes: $convertedGenericTypes,
                 variances: $orig->variances,
             );
     }
 
-    private function resolveGenericClassType(Type\GenericTypeNode $orig, GenericsResolver $genericResolver): TemplateGenericTypeNode|ConcreteGenericTypeNode
+    private function resolveGenericClassType(Scope $scope, Type\GenericTypeNode $orig, GenericsResolver $genericResolver): TemplateGenericTypeNode|ConcreteGenericTypeNode
     {
         $isGenericUtilityType = $orig->type instanceof Type\IdentifierTypeNode && in_array($orig->type->name, self::GENERIC_UTILITY_TYPES);
-        $convertedType = $isGenericUtilityType ? $orig->type : $this->resolveType($orig->type, $genericResolver, Type\IdentifierTypeNode::class, false);
+        $convertedType = $isGenericUtilityType ? $orig->type : $this->resolveType($scope, $orig->type, $genericResolver, Type\IdentifierTypeNode::class, false);
 
         $convertedGenericTypes = array_map(
-            fn(Type\TypeNode $item): Type\TypeNode => $this->resolveType($item, $genericResolver, Type\TypeNode::class, false),
+            fn(Type\TypeNode $item): Type\TypeNode => $this->resolveType($scope, $item, $genericResolver, Type\TypeNode::class, false),
             $orig->genericTypes,
         );
 
@@ -317,24 +324,89 @@ class TypeResolver
         return $genericResolver->hasMappedTemplateType()
             ? new TemplateGenericTypeNode(
                 type: $convertedType,
+                templateTypes: $this->getOriginalTemplateTypes($orig, $convertedType),
                 genericTypes: $convertedGenericTypes,
                 variances: $orig->variances,
             )
             : new ConcreteGenericTypeNode(
                 type: $convertedType,
+                templateTypes: $this->getOriginalTemplateTypes($orig, $convertedType),
                 genericTypes: $convertedGenericTypes,
                 variances: $orig->variances,
             );
     }
 
-    private function resolveIdentifier(string $symbol, GenericsResolver $genericResolver): Type\TypeNode
+    /**
+     * @return list<Type\TypeNode>
+     * @throws ReflectionException
+     */
+    private function getOriginalTemplateTypes(Type\GenericTypeNode $orig, TypeNode $convertedType): array
+    {
+        return match (true) {
+            $orig->type->name === 'key-of',
+            $orig->type->name === 'value-of',
+            => $orig->genericTypes,
+
+            $orig->type->name === 'int'
+            => match (count($orig->genericTypes)) {
+                2 => [
+                    new Type\IdentifierTypeNode('$min'),
+                    new Type\IdentifierTypeNode('$max'),
+                ],
+                default => throw new LogicException("Integer range type must have exactly 2 arguments: $orig"),
+            },
+
+            $orig->type->name === 'array',
+            $orig->type->name === 'non-empty-array',
+            $orig->type->name === 'Collection',
+            => match (count($orig->genericTypes)) {
+                2 => [
+                    new Type\IdentifierTypeNode('$key'),
+                    new Type\IdentifierTypeNode('$value'),
+                ],
+                1 => [
+                    new Type\IdentifierTypeNode('$value'),
+                ],
+                default => throw new LogicException(ucfirst($orig->type->name) . " type cannot have more than 2 arguments: $orig"),
+            },
+
+            $orig->type->name === 'list',
+            $orig->type->name === 'non-empty-list',
+            $orig->type->name === 'iterable',
+            => match (count($orig->genericTypes)) {
+                1 => [
+                    new Type\IdentifierTypeNode('$value'),
+                ],
+                default => throw new LogicException(ucfirst($orig->type->name) . " type cannot have more than 1 argument: $orig"),
+            },
+
+            $orig->type->name === 'new',
+            => match (count($orig->genericTypes)) {
+                1 => [
+                    new Type\IdentifierTypeNode('$class'),
+                ],
+                default => throw new LogicException("New pseudo-type cannot have more than 1 argument: $orig"),
+            },
+
+            ($convertedType instanceof Type\IdentifierTypeNode) && $this->isClassLike($convertedType->name)
+            => array_values(
+                $this->genericsResolverFactory
+                    ->extractFromClassName($convertedType->name)
+                    ->getTemplateTypesMap(),
+            ),
+
+            default => throw new LogicException("Cannot get original template types on type: $orig"),
+        };
+    }
+
+    private function resolveIdentifier(Scope $scope, string $symbol, GenericsResolver $genericResolver): Type\TypeNode
     {
         return $this->resolveBasicType($symbol)
             ?? $this->resolveVirtualOrGenericTypes($symbol, $genericResolver)
-            ?? $this->resolveRelativeTypes($symbol)
-            ?? $this->resolveImportedType($symbol)
+            ?? $this->resolveRelativeTypes($scope, $symbol)
+            ?? $this->resolveImportedType($scope, $symbol)
             ?? $this->resolveClassLike($symbol)
-            ?? $this->resolveNamespacedType($symbol)
+            ?? $this->resolveNamespacedType($scope, $symbol)
             ?? new Type\IdentifierTypeNode($symbol);
     }
 
@@ -343,23 +415,23 @@ class TypeResolver
         return $genericResolver->map($symbol);
     }
 
-    private function resolveRelativeTypes(string $symbol): ?Type\IdentifierTypeNode
+    private function resolveRelativeTypes(Scope $scope, string $symbol): ?Type\IdentifierTypeNode
     {
         if (!in_array($symbol, self::RELATIVE_TYPES)) {
             return null;
         }
 
-        if ($this->scope->class === null) {
+        if ($scope->class === null) {
             throw new LogicException("Cannot resolve `$symbol`, no class was defined in the current scope");
         }
 
         if ($symbol === 'parent') {
-            return ($parent = get_parent_class($this->scope->class)) !== false
+            return ($parent = get_parent_class($scope->class)) !== false
                 ? new Type\IdentifierTypeNode($parent)
-                : throw new LogicException("Class/type `{$this->scope->class}` doesn't have a parent");
+                : throw new LogicException("Class/type `$scope->class` doesn't have a parent");
         }
 
-        return new Type\IdentifierTypeNode($this->scope->class);
+        return new Type\IdentifierTypeNode($scope->class);
     }
 
     private function resolveBasicType(string $symbol): ?Type\IdentifierTypeNode
@@ -369,7 +441,7 @@ class TypeResolver
             : null;
     }
 
-    private function resolveImportedType(string $symbol): ?Type\IdentifierTypeNode
+    private function resolveImportedType(Scope $scope, string $symbol): ?Type\IdentifierTypeNode
     {
         $alias = $symbol;
 
@@ -379,7 +451,7 @@ class TypeResolver
             $alias = strtolower($top);
         }
 
-        $aliases = $this->importsResolver->getImports($this->scope);
+        $aliases = $this->importsResolver->getImports($scope);
 
         if (!isset($aliases[$alias])) {
             return null;
@@ -392,20 +464,15 @@ class TypeResolver
         return new Type\IdentifierTypeNode(rtrim("$aliases[$alias]\\$rest", '\\'));
     }
 
-    private function resolveNamespacedType(string $symbol): ?Type\IdentifierTypeNode
+    private function resolveNamespacedType(Scope $scope, string $symbol): ?Type\IdentifierTypeNode
     {
-        $namespace = $this->importsResolver->getNamespace($this->scope);
+        $namespace = $this->importsResolver->getNamespace($scope);
 
         return $namespace ? $this->resolveClassLike("$namespace\\$symbol") : null;
     }
 
     private function resolveClassLike(string $symbol): ?Type\IdentifierTypeNode
     {
-        return class_exists($symbol)
-            || trait_exists($symbol)
-            || interface_exists($symbol)
-            || enum_exists($symbol)
-            ? new Type\IdentifierTypeNode($symbol)
-            : null;
+        return $this->isClassLike($symbol) ? new Type\IdentifierTypeNode($symbol) : null;
     }
 }

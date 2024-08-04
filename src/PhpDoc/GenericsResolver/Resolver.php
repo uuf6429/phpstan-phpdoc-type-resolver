@@ -85,7 +85,7 @@ class Resolver
     /**
      * @return array<string, TypeNode>
      */
-    private function getTemplateTypesMap(): array
+    public function getTemplateTypesMap(): array
     {
         return $this->templateTypesMapCache
             ?? ($this->templateTypesMapCache = [...$this->templateTypesMap]);
@@ -94,7 +94,7 @@ class Resolver
     /**
      * @return array<string, TypeNode>
      */
-    private function getDefinedTypesMap(): array
+    public function getDefinedTypesMap(): array
     {
         return $this->definedTypesMapCache
             ?? ($this->definedTypesMapCache = [...$this->definedTypesMap]);
@@ -103,7 +103,7 @@ class Resolver
     /**
      * @return array<string, TypeNode>
      */
-    private function getImportedTypesMap(): array
+    public function getImportedTypesMap(): array
     {
         return $this->importedTypesMapCache
             ?? ($this->importedTypesMapCache = [...$this->importedTypesMap]);

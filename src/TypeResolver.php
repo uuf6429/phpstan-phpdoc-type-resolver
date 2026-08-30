@@ -124,11 +124,11 @@ class TypeResolver
 	private PhpImportsResolver $importsResolver;
 
 	public function __construct(
-		?GenericsExtractor $genericsExtractor = null,
-		?PhpImportsResolver $importsResolver = null,
+		GenericsExtractor $genericsExtractor,
+		PhpImportsResolver $importsResolver,
 	) {
-		$this->genericsExtractor = $genericsExtractor ?? new GenericsExtractor(new PhpDocFactory());
-		$this->importsResolver = $importsResolver ?? new PhpImportsResolver();
+		$this->genericsExtractor = $genericsExtractor;
+		$this->importsResolver = $importsResolver;
 	}
 
 	public function resolve(Scope $scope, Type\TypeNode $type, ?GenericsResolver $genericResolver = null): Type\TypeNode

@@ -87,7 +87,10 @@ $docBlock = $parser->parse(
 );
 
 // Finally, we initialize the type resolver and resolve the param type of the first param
-$typeResolver = new \uuf6429\PHPStanPHPDocTypeResolver\TypeResolver();
+$typeResolver = new \uuf6429\PHPStanPHPDocTypeResolver\TypeResolver(
+    $genericsExtractor,
+    new \uuf6429\PHPStanPHPDocTypeResolver\PhpImports\Resolver(),
+);
 $paramType = $typeResolver->resolve($scope, $docBlock->getParamTagValues()[0]->type);
 assert((string)$paramType === '(uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\Person | object{name: string})');
 ```

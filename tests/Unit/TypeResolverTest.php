@@ -17,12 +17,14 @@ use Reflector;
 use RuntimeException;
 use SplFileInfo;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Factory;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Extractor as GenericsExtractor;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Resolver;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Scope;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\ConcreteGenericTypeNode;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\TemplateGenericTypeNode;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\TemplateTypeNode;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\TypeDefTypeNode;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpImports\Resolver as PhpImportsResolver;
 use uuf6429\PHPStanPHPDocTypeResolver\TypeResolver;
 use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures;
 use uuf6429\PHPStanPHPDocTypeResolverTests\ReflectsValuesTrait;
@@ -551,7 +553,7 @@ final class TypeResolverTest extends TestCase
 	public function testThatInvalidTypeIsIgnored(): void
 	{
 		$scope = new Scope(null, null, null, '', new Resolver());
-		$typeResolver = new TypeResolver();
+		$typeResolver = new TypeResolver(new GenericsExtractor(new Factory()), new PhpImportsResolver());
 		$invalidType = new Type\InvalidTypeNode(new ParserException('', 0, 0, 0));
 
 		$processedType = $typeResolver->resolve($scope, $invalidType);
@@ -562,7 +564,7 @@ final class TypeResolverTest extends TestCase
 	public function testThatUnsupportedTypesTriggerException(): void
 	{
 		$scope = new Scope(null, null, null, '', new Resolver());
-		$typeResolver = new TypeResolver();
+		$typeResolver = new TypeResolver(new GenericsExtractor(new Factory()), new PhpImportsResolver());
 		$unsupportedType = $this->createMock(Type\TypeNode::class);
 
 		$this->expectException(RuntimeException::class);

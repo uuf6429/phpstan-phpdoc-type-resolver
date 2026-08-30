@@ -20,7 +20,7 @@ use ReflectionParameter;
 use ReflectionProperty;
 use Reflector;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Factory as PhpDocFactory;
-use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Factory as GenericsResolverFactory;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Extractor as GenericsExtractor;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Resolver;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\ResolverRefState;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\ResolverValueState;
@@ -61,7 +61,7 @@ final class ReflectorScopeResolverTest extends TestCase
 			$this->markTestSkipped('Reflector could not be constructed');
 		}
 
-		$resolver = new ReflectorScopeResolver(new GenericsResolverFactory(new PhpDocFactory()));
+		$resolver = new ReflectorScopeResolver(new GenericsExtractor(new PhpDocFactory()));
 
 		if ($expectedException !== null) {
 			$this->expectException(get_class($expectedException));

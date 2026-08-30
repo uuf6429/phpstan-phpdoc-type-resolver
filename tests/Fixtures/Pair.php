@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures;
 
 /**
@@ -25,15 +27,19 @@ abstract class Pair
 
 	/**
 	 * @template TValue of mixed
+	 *
 	 * @return Pair<int, TValue>
+	 *
 	 * @phpstan-ignore method.templateTypeNotInParameter
 	 */
 	abstract public static function makeArrayValue(int $index, mixed $value): self;
 
 	/**
 	 * @template TTwinType of mixed
+	 *
 	 * @param TTwinType $left
 	 * @param TTwinType $right
+	 *
 	 * @return Pair<TTwinType, TTwinType>
 	 */
 	abstract public static function makeTwins(mixed $left, mixed $right): self;

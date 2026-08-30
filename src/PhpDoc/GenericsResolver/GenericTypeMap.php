@@ -6,7 +6,11 @@ namespace uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver;
 
 use PHPStan\PhpDocParser\Ast\Type\TypeNode;
 
-class Resolver
+/**
+ * Holds the generic/template, defined and imported type names available within a scope, and resolves a name to its
+ * concrete type via {@see self::map()}. It also tracks whether every template type seen so far stayed concrete.
+ */
+class GenericTypeMap
 {
 	/**
 	 * @var array<string, TypeNode>
@@ -33,9 +37,9 @@ class Resolver
 	private Flag $concreteness;
 
 	/**
-	 * @param iterable<string, TypeNode> $templateTypesMap A map of <template type> => <concrete type> entries.
-	 * @param iterable<string, TypeNode> $definedTypesMap A map of <template type> => <concrete type> entries.
-	 * @param iterable<string, TypeNode> $importedTypesMap A map of <template type> => <concrete type> entries.
+	 * @param iterable<string, TypeNode> $templateTypesMap a map of <template type> => <concrete type> entries
+	 * @param iterable<string, TypeNode> $definedTypesMap  a map of <template type> => <concrete type> entries
+	 * @param iterable<string, TypeNode> $importedTypesMap a map of <template type> => <concrete type> entries
 	 */
 	public function __construct(
 		iterable $templateTypesMap = [],
@@ -43,9 +47,9 @@ class Resolver
 		iterable $importedTypesMap = [],
 		?Flag $concreteness = null,
 	) {
-		$this->templateTypesMap = is_array($templateTypesMap) ? $templateTypesMap : iterator_to_array($templateTypesMap);
-		$this->definedTypesMap = is_array($definedTypesMap) ? $definedTypesMap : iterator_to_array($definedTypesMap);
-		$this->importedTypesMap = is_array($importedTypesMap) ? $importedTypesMap : iterator_to_array($importedTypesMap);
+		$this->templateTypesMap = \is_array($templateTypesMap) ? $templateTypesMap : iterator_to_array($templateTypesMap);
+		$this->definedTypesMap = \is_array($definedTypesMap) ? $definedTypesMap : iterator_to_array($definedTypesMap);
+		$this->importedTypesMap = \is_array($importedTypesMap) ? $importedTypesMap : iterator_to_array($importedTypesMap);
 		$this->concreteness = $concreteness ?? new SimpleFlag(true);
 	}
 
@@ -67,7 +71,7 @@ class Resolver
 	 * itself) must be recorded explicitly via {@see self::markTemplateTypeUnresolved()} and can then be queried via
 	 * {@see self::hasUnresolvedTemplateType()}.
 	 */
-	public function map(string $template): null|TypeNode
+	public function map(string $template): ?TypeNode
 	{
 		return $this->getTemplateTypesMap()[$template]
 			?? $this->getDefinedTypesMap()[$template]
@@ -93,7 +97,7 @@ class Resolver
 		return !$this->concreteness->isSet();
 	}
 
-	public static function createMerged(Resolver $first, Resolver $second): self
+	public static function createMerged(self $first, self $second): self
 	{
 		return new self(
 			array_merge($first->getTemplateTypesMap(), $second->getTemplateTypesMap()),

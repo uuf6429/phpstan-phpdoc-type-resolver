@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures;
 
 use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\PHP81\Number;
@@ -21,6 +23,7 @@ abstract class Payload
 
 	/**
 	 * @param Payload<*> $data
+	 *
 	 * @return Payload<Payload<T>>
 	 */
 	abstract public static function makePayloadPayload(Payload $data): self;

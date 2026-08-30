@@ -58,7 +58,7 @@ $docBlock = \uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Factory::createInstance()
 
 // And finally, retrieve the resolved type of the param tag
 $paramTag = $docBlock->getTags('@param')[0];
-assert((string)$paramTag->type === '(uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\Person | object{name: string})');
+assert((string)$paramTag->type === '(object{name: string} | uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\Person)');
 ```
 
 ### 🙈 Without Factory/DocBlock Wrapper
@@ -92,7 +92,7 @@ $typeResolver = new \uuf6429\PHPStanPHPDocTypeResolver\TypeResolver(
     new \uuf6429\PHPStanPHPDocTypeResolver\PhpImports\Resolver(),
 );
 $paramType = $typeResolver->resolve($scope, $docBlock->getParamTagValues()[0]->type);
-assert((string)$paramType === '(uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\Person | object{name: string})');
+assert((string)$paramType === '(object{name: string} | uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\Person)');
 ```
 
 ### 🤪 Via Source Strings
@@ -131,7 +131,7 @@ $scope = new \uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Scope(
     class: 'My\Project\Services\Greeter',
     // The actualy PHPDoc block containing the type we're interested in
     comment: "/**\n * @param PersonEntity|object{name: string} \$person\n */",
-    genericsResolver: new \uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Resolver(),
+    genericsResolver: new \uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\GenericTypeMap(),
 );
 
 // The factory can also be used with a custom scope

@@ -5,9 +5,8 @@ declare(strict_types=1);
 namespace uuf6429\PHPStanPHPDocTypeResolver\PhpDoc;
 
 use PHPStan\PhpDocParser;
-use Reflector;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Extractor as GenericsExtractor;
-use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Resolver as GenericsResolver;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\GenericTypeMap as GenericsResolver;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpImports;
 use uuf6429\PHPStanPHPDocTypeResolver\TypeResolver;
 
@@ -18,19 +17,18 @@ class Factory
 {
 	/** @readonly */
 	private ReflectorScopeResolver $scopeResolver;
+
 	/** @readonly */
 	private PhpDocParser\Lexer\Lexer $lexer;
+
 	/** @readonly */
 	private PhpDocParser\Parser\PhpDocParser $parser;
-	/** @readonly */
-	private PhpImports\Resolver $phpImportsResolver;
+
 	/** @readonly */
 	private GenericsExtractor $genericsExtractor;
 
-	public static function createInstance(): self
-	{
-		return new self();
-	}
+	/** @readonly */
+	private TypeResolver $typeResolver;
 
 	public function __construct(
 		?GenericsExtractor $genericsExtractor = null,
@@ -47,27 +45,35 @@ class Factory
 		$constExprParser = $phpDocConstExprParser ?? new PhpDocParser\Parser\ConstExprParser();
 		$typeParser = $phpDocTypeParser ?? new PhpDocParser\Parser\TypeParser($constExprParser);
 		$this->parser = $phpDocParser ?? new PhpDocParser\Parser\PhpDocParser($typeParser, $constExprParser);
-		$this->phpImportsResolver = $phpImportsResolver ?? new PhpImports\Resolver();
+		$this->typeResolver = new TypeResolver($this->genericsExtractor, $phpImportsResolver ?? new PhpImports\Resolver());
 	}
 
-	public function createFromReflector(Reflector $reflector): Block
+	public static function createInstance(): self
+	{
+		return new self();
+	}
+
+	/**
+	 * @throws \ReflectionException
+	 */
+	public function createFromReflector(\Reflector $reflector): Block
 	{
 		return $this->createFromScope($this->scopeResolver->resolve($reflector));
 	}
 
 	/**
-	 * @param string $comment The PHPDoc block comment.
-	 * @param null|string $file The file where the comment appeared in.
-	 * @param null|int $line The (approximate) line where the comment appeared.
-	 * @param null|class-string $class Fully-qualified name of the class that the comment applies to.
+	 * @param string                $comment          the PHPDoc block comment
+	 * @param null|string           $file             the file where the comment appeared in
+	 * @param null|int              $line             the (approximate) line where the comment appeared
+	 * @param null|class-string     $class            fully-qualified name of the class that the comment applies to
 	 * @param null|GenericsResolver $genericsResolver List of generic types inherited by, but outside of, the current
 	 *                                                scope. For example, from class-level in case of method scope.
 	 */
 	public function createFromComment(
-		string   $comment,
-		?string  $file = null,
-		?int     $line = null,
-		?string  $class = null,
+		string $comment,
+		?string $file = null,
+		?int $line = null,
+		?string $class = null,
 		?GenericsResolver $genericsResolver = null,
 	): Block {
 		return $this->createFromScope(new Scope(
@@ -86,11 +92,11 @@ class Factory
 			docNode: $this->parser->parse(
 				new PhpDocParser\Parser\TokenIterator(
 					$this->lexer->tokenize(
-						trim($scope->comment) !== '' ? $scope->comment : "/**\n */",
+						'' !== trim($scope->comment) ? $scope->comment : "/**\n */",
 					),
 				),
 			),
-			typeResolver: new TypeResolver($this->genericsExtractor, $this->phpImportsResolver),
+			typeResolver: $this->typeResolver,
 			genericsExtractor: $this->genericsExtractor,
 		);
 	}

@@ -1,9 +1,9 @@
 <?php
 
+declare(strict_types=1);
+
 namespace uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures;
 
-use Closure;
-use uuf6429;
 use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\Cases\{Case1, Case2};
 
 /**
@@ -67,7 +67,7 @@ abstract class TypeResolverTestFixture
 	abstract public function returnCasesJumpingWrappedInObject(): object;
 
 	/**
-	 * @return ($cond is true ? callable : "text")
+	 * @return ($cond is true ? (callable(): void) : "text")
 	 */
 	abstract public function returnCallableOrTextConditionally(bool $cond): callable|string;
 
@@ -78,21 +78,27 @@ abstract class TypeResolverTestFixture
 
 	/**
 	 * @template T of object
+	 *
 	 * @param class-string<T> $class
+	 *
 	 * @return new<T>
 	 */
 	abstract public function createClass(string $class): object;
 
 	/**
 	 * @template TColorKey of key-of<TColors>
+	 *
 	 * @param TColorKey $colorName
+	 *
 	 * @return null|TColors[TColorKey]
 	 */
 	abstract public function translateColor(string $colorName): ?string;
 
 	/**
 	 * @template TItem
+	 *
 	 * @param TItem $item
+	 *
 	 * @return list<TItem>
 	 */
 	abstract public function getSimilarItems($item): array;
@@ -117,7 +123,10 @@ abstract class TypeResolverTestFixture
 	 */
 	abstract public function returnAllClassConstants(): array;
 
-	public static function getTypeResolverTestClosureReturningString(): Closure
+	/**
+	 * @return (\Closure(): string)
+	 */
+	public static function getTypeResolverTestClosureReturningString(): \Closure
 	{
 		/**
 		 * @return string

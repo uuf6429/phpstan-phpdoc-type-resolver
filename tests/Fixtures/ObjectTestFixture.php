@@ -1,11 +1,12 @@
 <?php
 
-namespace uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures;
+declare(strict_types=1);
 
-use Stringable;
+namespace uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures;
 
 /**
  * @property string $dynamicProperty
+ *
  * @phpstan-import-type TColors from TypeResolverTestFixture
  * @phpstan-import-type TColors from TypeResolverTestFixture as TOtherColors
  */
@@ -14,12 +15,12 @@ class ObjectTestFixture
 	public const TEST = 123;
 
 	/**
-	 * @var 'hello'|'bye'
+	 * @var 'bye'|'hello'
 	 */
 	public string $realProperty;
 
 	/**
-	 * @param 'hello'|'bye' $greeting
+	 * @param 'bye'|'hello' $greeting
 	 */
 	public function __construct(string $greeting)
 	{
@@ -27,15 +28,15 @@ class ObjectTestFixture
 	}
 
 	/**
-	 * Greeter
+	 * Greeter.
 	 *
 	 * A function that greets the entity given their name with the desired greeting.
 	 * For example, one could greet the world with `(new ObjectTestFixture('Hello'))->greet('World')`.
 	 *
-	 * @param string|Stringable $name
+	 * @param string|\Stringable $name
 	 */
-	public function greet(string|Stringable $name): void
+	public function greet(string|\Stringable $name): void
 	{
-		echo "$this->realProperty $name";
+		echo "{$this->realProperty} {$name}";
 	}
 }

@@ -15,20 +15,19 @@ class TemplateTypeNode implements TypeNode
 	use NodeAttributes;
 
 	/**
-	 * @param string $name The name of the type e.g. `T` in `@template T`.
+	 * @param string        $name  The name of the type e.g. `T` in `@template T`.
 	 * @param null|TypeNode $bound A type the template is limited to e.g. `object` in case of `@template T of object`.
 	 */
 	public function __construct(
 		public string $name,
-		public null|TypeNode $bound,
-	) {
-		//
-	}
+		public ?TypeNode $bound,
+	) {}
 
+	#[\Override]
 	public function __toString(): string
 	{
-		return $this->bound !== null
-			? "$this->name of $this->bound"
+		return null !== $this->bound
+			? "{$this->name} of {$this->bound}"
 			: $this->name;
 	}
 }

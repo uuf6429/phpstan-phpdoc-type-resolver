@@ -1,8 +1,9 @@
 <?php
 
+declare(strict_types=1);
+
 namespace uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures;
 
-use Closure;
 use SplFileInfo;
 
 /**
@@ -18,10 +19,13 @@ function typeResolverTestFunctionReturningStringFixture(): string
  */
 function typeResolverTestFunctionReturningImportedClass(): SplFileInfo
 {
-	return new SplFileInfo(__FILE__);
+	return new \SplFileInfo(__FILE__);
 }
 
-function getTypeResolverTestClosureReturningString(): Closure
+/**
+ * @return (\Closure(): string)
+ */
+function getTypeResolverTestClosureReturningString(): \Closure
 {
 	/**
 	 * @return string
@@ -31,18 +35,21 @@ function getTypeResolverTestClosureReturningString(): Closure
 	};
 }
 
-function getTypeResolverTestClosureReturningImportedType(): Closure
+/**
+ * @return (\Closure(): \SplFileInfo)
+ */
+function getTypeResolverTestClosureReturningImportedType(): \Closure
 {
 	/**
 	 * @return SplFileInfo
 	 */
-	return static function (): SplFileInfo {
-		return new SplFileInfo(__FILE__);
+	return static function (): \SplFileInfo {
+		return new \SplFileInfo(__FILE__);
 	};
 }
 
 /**
- * @param 'hello'|'bye' $greeting
+ * @param 'bye'|'hello' $greeting
  */
 function functionWithParameter(string $greeting): void
 {
@@ -51,8 +58,9 @@ function functionWithParameter(string $greeting): void
 
 /**
  * @return callable-string
+ * @phpstan-ignore missingType.callable
  */
 function getFunctionWithParameter(): string
 {
-	return __NAMESPACE__ . '\\functionWithParameter';
+	return __NAMESPACE__ . '\functionWithParameter';
 }

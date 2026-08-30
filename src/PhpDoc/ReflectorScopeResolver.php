@@ -4,15 +4,6 @@ declare(strict_types=1);
 
 namespace uuf6429\PHPStanPHPDocTypeResolver\PhpDoc;
 
-use InvalidArgumentException;
-use ReflectionAttribute;
-use ReflectionClass;
-use ReflectionClassConstant;
-use ReflectionException;
-use ReflectionFunction;
-use ReflectionMethod;
-use ReflectionProperty;
-use Reflector;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Extractor as GenericsExtractor;
 
 class ReflectorScopeResolver
@@ -20,26 +11,24 @@ class ReflectorScopeResolver
 	public function __construct(
 		/** @readonly */
 		private GenericsExtractor $genericsExtractor,
-	) {
-		//
-	}
+	) {}
 
 	/**
-	 * @throws ReflectionException
+	 * @throws \ReflectionException
 	 */
-	public function resolve(Reflector|ReflectionAttribute $reflector): Scope
+	public function resolve(\ReflectionAttribute|\Reflector $reflector): Scope
 	{
 		switch (true) {
-			case $reflector instanceof ReflectionClass:
+			case $reflector instanceof \ReflectionClass:
 				return new Scope(
 					file: ($file = $reflector->getFileName()) === false ? null : $file,
 					line: ($line = $reflector->getStartLine()) === false ? null : $line,
 					class: $reflector->getName(),
 					comment: (string)$reflector->getDocComment(),
-					genericsResolver: new GenericsResolver\Resolver(),
+					genericsResolver: new GenericsResolver\GenericTypeMap(),
 				);
 
-			case $reflector instanceof ReflectionMethod:
+			case $reflector instanceof \ReflectionMethod:
 				return new Scope(
 					file: ($file = $reflector->getFileName()) === false ? null : $file,
 					line: ($line = $reflector->getStartLine()) === false ? null : $line,
@@ -48,17 +37,18 @@ class ReflectorScopeResolver
 					genericsResolver: $this->genericsExtractor->extractFromReflector($class),
 				);
 
-			case $reflector instanceof ReflectionFunction:
+			case $reflector instanceof \ReflectionFunction:
 				return new Scope(
 					file: ($file = $reflector->getFileName()) === false ? null : $file,
 					line: ($line = $reflector->getStartLine()) === false ? null : $line,
 					class: $reflector->getClosureScopeClass()?->getName(),
 					comment: (string)$reflector->getDocComment(),
-					genericsResolver: new GenericsResolver\Resolver(),
+					genericsResolver: new GenericsResolver\GenericTypeMap(),
 				);
 
-			case $reflector instanceof ReflectionClassConstant:
+			case $reflector instanceof \ReflectionClassConstant:
 				$class = $reflector->getDeclaringClass();
+
 				return new Scope(
 					file: ($file = $class->getFileName()) === false ? null : $file,
 					line: ($line = $class->getStartLine()) === false ? null : $line,
@@ -67,8 +57,9 @@ class ReflectorScopeResolver
 					genericsResolver: $this->genericsExtractor->extractFromReflector($class),
 				);
 
-			case $reflector instanceof ReflectionProperty:
+			case $reflector instanceof \ReflectionProperty:
 				$class = $reflector->getDeclaringClass();
+
 				return new Scope(
 					file: ($file = $class->getFileName()) === false ? null : $file,
 					line: ($line = $class->getStartLine()) === false ? null : $line,
@@ -78,7 +69,7 @@ class ReflectorScopeResolver
 				);
 
 			default:
-				return throw new InvalidArgumentException('Cannot determine scope information for reflector of type ' . get_class($reflector));
+				return throw new \InvalidArgumentException('Cannot determine scope information for reflector of type ' . \get_class($reflector));
 		}
 	}
 }

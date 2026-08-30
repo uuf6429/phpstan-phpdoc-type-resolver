@@ -15,9 +15,7 @@ class File
 	public function __construct(
 		/** @readonly */
 		private array $blocks,
-	) {
-		//
-	}
+	) {}
 
 	public function getNamespaceAt(?int $line): string
 	{
@@ -34,7 +32,7 @@ class File
 
 	private function getBlockAt(?int $line): ?Block
 	{
-		if ($line === null) {
+		if (null === $line) {
 			return null;
 		}
 

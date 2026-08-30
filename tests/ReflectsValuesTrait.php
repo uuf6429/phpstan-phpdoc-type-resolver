@@ -4,31 +4,22 @@ declare(strict_types=1);
 
 namespace uuf6429\PHPStanPHPDocTypeResolverTests;
 
-use Closure;
-use ReflectionException;
-use ReflectionFunction;
-use ReflectionMethod;
-
 /**
  * @internal
  */
 trait ReflectsValuesTrait
 {
 	/**
-	 * @param array{0: class-string, 1: string} $call
-	 * @throws ReflectionException
+	 * @param array{object|string, string}|(\Closure(mixed ...): mixed) $callable
+	 *
+	 * @return ($callable is array ? \ReflectionMethod : \ReflectionFunction)
+	 *
+	 * @throws \ReflectionException
 	 */
-	private static function reflectMethod(array $call): ReflectionMethod
+	private static function reflectCallable(array|\Closure|string $callable): \ReflectionFunction|\ReflectionMethod
 	{
-		return new ReflectionMethod($call[0], $call[1]);
-	}
-
-	/**
-	 * @param callable-string|Closure $function
-	 * @throws ReflectionException
-	 */
-	private static function reflectFunction(string|Closure $function): ReflectionFunction
-	{
-		return new ReflectionFunction($function);
+		return \is_array($callable)
+			? new \ReflectionMethod($callable[0], $callable[1])
+			: new \ReflectionFunction($callable);
 	}
 }

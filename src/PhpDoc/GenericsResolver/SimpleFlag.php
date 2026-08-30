@@ -7,19 +7,19 @@ namespace uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver;
 /**
  * @internal
  */
-class SimpleFlag implements Flag
+final class SimpleFlag implements Flag
 {
 	public function __construct(
 		private bool $value,
-	) {
-		//
-	}
+	) {}
 
+	#[\Override]
 	public function isSet(): bool
 	{
 		return $this->value;
 	}
 
+	#[\Override]
 	public function set(bool $value): void
 	{
 		$this->value = $value;

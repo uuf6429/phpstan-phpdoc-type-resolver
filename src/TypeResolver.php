@@ -481,7 +481,13 @@ class TypeResolver
 
 	private function resolveVirtualOrGenericTypes(string $symbol, GenericsResolver $genericResolver): null|Type\TypeNode
 	{
-		return $genericResolver->map($symbol);
+		$result = $genericResolver->map($symbol);
+
+		if ((string)$result === $symbol) {
+			$genericResolver->markTemplateTypeUnresolved();
+		}
+
+		return $result;
 	}
 
 	private function resolveRelativeTypes(Scope $scope, string $symbol): ?Type\IdentifierTypeNode

@@ -24,9 +24,13 @@ class Resolver
 	private array $importedTypesMap;
 
 	/**
+	 * Tracks whether every template type seen so far resolved to a concrete type. It stays set while everything is
+	 * concrete and gets unset (via {@see self::markTemplateTypeUnresolved()}) as soon as a template type stays
+	 * unresolved (i.e. was mapped to itself).
+	 *
 	 * @readonly
 	 */
-	private ResolverStateInterface $state;
+	private Flag $concreteness;
 
 	/**
 	 * @param iterable<string, TypeNode> $templateTypesMap A map of <template type> => <concrete type> entries.
@@ -37,12 +41,12 @@ class Resolver
 		iterable $templateTypesMap = [],
 		iterable $definedTypesMap = [],
 		iterable $importedTypesMap = [],
-		?ResolverStateInterface $state = null,
+		?Flag $concreteness = null,
 	) {
 		$this->templateTypesMap = is_array($templateTypesMap) ? $templateTypesMap : iterator_to_array($templateTypesMap);
 		$this->definedTypesMap = is_array($definedTypesMap) ? $definedTypesMap : iterator_to_array($definedTypesMap);
 		$this->importedTypesMap = is_array($importedTypesMap) ? $importedTypesMap : iterator_to_array($importedTypesMap);
-		$this->state = $state ?? new ResolverValueState(isConcrete: true);
+		$this->concreteness = $concreteness ?? new SimpleFlag(true);
 	}
 
 	public function setTemplateType(string $template, TypeNode $concrete): void
@@ -59,21 +63,25 @@ class Resolver
 	 * Maps a template type to a concrete type, if possible.
 	 * Otherwise, returns the original template type if it's a known template type, or null if it isn't.
 	 *
-	 * Note: as a side effect, this records whether a template type stayed unresolved (i.e. was mapped to itself),
-	 * which can then be queried via {@see self::hasUnresolvedTemplateType()}.
+	 * This is a pure lookup with no side effects. Whether a template type stayed unresolved (i.e. was mapped to
+	 * itself) must be recorded explicitly via {@see self::markTemplateTypeUnresolved()} and can then be queried via
+	 * {@see self::hasUnresolvedTemplateType()}.
 	 */
 	public function map(string $template): null|TypeNode
 	{
-		$result = $this->getTemplateTypesMap()[$template]
+		return $this->getTemplateTypesMap()[$template]
 			?? $this->getDefinedTypesMap()[$template]
 			?? $this->getImportedTypesMap()[$template]
 			?? null;
+	}
 
-		if ((string)$result === $template) {
-			$this->state->setConcrete(false);
-		}
-
-		return $result;
+	/**
+	 * Records that a template type stayed unresolved (i.e. was mapped to itself instead of a concrete type), which
+	 * can then be queried via {@see self::hasUnresolvedTemplateType()}.
+	 */
+	public function markTemplateTypeUnresolved(): void
+	{
+		$this->concreteness->set(false);
 	}
 
 	/**
@@ -82,7 +90,7 @@ class Resolver
 	 */
 	public function hasUnresolvedTemplateType(): bool
 	{
-		return !$this->state->isConcrete();
+		return !$this->concreteness->isSet();
 	}
 
 	public static function createMerged(Resolver $first, Resolver $second): self
@@ -91,7 +99,7 @@ class Resolver
 			array_merge($first->getTemplateTypesMap(), $second->getTemplateTypesMap()),
 			array_merge($first->getDefinedTypesMap(), $second->getDefinedTypesMap()),
 			array_merge($first->getImportedTypesMap(), $second->getImportedTypesMap()),
-			new ResolverRefState([$first->state, $second->state]),
+			new AggregateFlag([$first->concreteness, $second->concreteness]),
 		);
 	}
 

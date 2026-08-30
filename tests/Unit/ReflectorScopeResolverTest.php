@@ -22,8 +22,8 @@ use Reflector;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Factory as PhpDocFactory;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Extractor as GenericsExtractor;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Resolver;
-use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\ResolverRefState;
-use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\ResolverValueState;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\AggregateFlag;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\SimpleFlag;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\ReflectorScopeResolver;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Scope;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\TypeDefTypeNode;
@@ -157,9 +157,9 @@ final class ReflectorScopeResolverTest extends TestCase
 					PHP,
 				genericsResolver: new Resolver(
 					importedTypesMap: $importedTypesMap,
-					state: new ResolverRefState([
-						new ResolverValueState(true),
-						new ResolverValueState(true),
+					concreteness: new AggregateFlag([
+						new SimpleFlag(true),
+						new SimpleFlag(true),
 					]),
 				),
 			),
@@ -231,9 +231,9 @@ final class ReflectorScopeResolverTest extends TestCase
 				class: PlainEnum::class,
 				comment: '',
 				genericsResolver: new Resolver(
-					state: new ResolverRefState([
-						new ResolverValueState(true),
-						new ResolverValueState(true),
+					concreteness: new AggregateFlag([
+						new SimpleFlag(true),
+						new SimpleFlag(true),
 					]),
 				),
 			),
@@ -249,9 +249,9 @@ final class ReflectorScopeResolverTest extends TestCase
 				class: StringEnum::class,
 				comment: '',
 				genericsResolver: new Resolver(
-					state: new ResolverRefState([
-						new ResolverValueState(true),
-						new ResolverValueState(true),
+					concreteness: new AggregateFlag([
+						new SimpleFlag(true),
+						new SimpleFlag(true),
 					]),
 				),
 			),
@@ -281,9 +281,9 @@ final class ReflectorScopeResolverTest extends TestCase
 				comment: '',
 				genericsResolver: new Resolver(
 					importedTypesMap: $importedTypesMap,
-					state: new ResolverRefState([
-						new ResolverValueState(true),
-						new ResolverValueState(true),
+					concreteness: new AggregateFlag([
+						new SimpleFlag(true),
+						new SimpleFlag(true),
 					]),
 				),
 			),
@@ -308,9 +308,9 @@ final class ReflectorScopeResolverTest extends TestCase
 					PHP,
 				genericsResolver: new Resolver(
 					importedTypesMap: $importedTypesMap,
-					state: new ResolverRefState([
-						new ResolverValueState(true),
-						new ResolverValueState(true),
+					concreteness: new AggregateFlag([
+						new SimpleFlag(true),
+						new SimpleFlag(true),
 					]),
 				),
 			),

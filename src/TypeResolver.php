@@ -13,7 +13,7 @@ use PHPStan\PhpDocParser\Ast\Type\TypeNode;
 use ReflectionException;
 use RuntimeException;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Factory as PhpDocFactory;
-use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Factory as GenericsResolverFactory;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Extractor as GenericsExtractor;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Resolver as GenericsResolver;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Scope;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\ConcreteGenericTypeNode;
@@ -116,7 +116,7 @@ class TypeResolver
 	/**
 	 * @readonly
 	 */
-	private GenericsResolverFactory $genericsResolverFactory;
+	private GenericsExtractor $genericsExtractor;
 
 	/**
 	 * @readonly
@@ -124,10 +124,10 @@ class TypeResolver
 	private PhpImportsResolver $importsResolver;
 
 	public function __construct(
-		?GenericsResolverFactory $genericsResolverFactory = null,
+		?GenericsExtractor $genericsExtractor = null,
 		?PhpImportsResolver $importsResolver = null,
 	) {
-		$this->genericsResolverFactory = $genericsResolverFactory ?? new GenericsResolverFactory(new PhpDocFactory());
+		$this->genericsExtractor = $genericsExtractor ?? new GenericsExtractor(new PhpDocFactory());
 		$this->importsResolver = $importsResolver ?? new PhpImportsResolver();
 	}
 
@@ -358,7 +358,7 @@ class TypeResolver
 			$orig->genericTypes,
 		);
 
-		return $genericResolver->hasMappedTemplateType()
+		return $genericResolver->hasUnresolvedTemplateType()
 			? new TemplateGenericTypeNode(
 				type: $convertedType,
 				templateTypes: $this->getOriginalTemplateTypes($orig, $convertedType),
@@ -391,7 +391,7 @@ class TypeResolver
 			}
 		}
 
-		return $genericResolver->hasMappedTemplateType()
+		return $genericResolver->hasUnresolvedTemplateType()
 			? new TemplateGenericTypeNode(
 				type: $convertedType,
 				templateTypes: $this->getOriginalTemplateTypes($orig, $convertedType),
@@ -428,7 +428,6 @@ class TypeResolver
 
 			$orig->type->name === 'array',
 			$orig->type->name === 'non-empty-array',
-			$orig->type->name === 'Collection',
 			=> match (count($orig->genericTypes)) {
 				2 => [
 					new Type\IdentifierTypeNode('$key'),
@@ -460,7 +459,7 @@ class TypeResolver
 
 			($convertedType instanceof Type\IdentifierTypeNode) && $this->isClassLike($convertedType->name)
 			=> array_values(
-				$this->genericsResolverFactory
+				$this->genericsExtractor
 					->extractFromClassName($convertedType->name)
 					->getTemplateTypesMap(),
 			),

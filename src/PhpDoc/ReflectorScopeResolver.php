@@ -13,13 +13,13 @@ use ReflectionFunction;
 use ReflectionMethod;
 use ReflectionProperty;
 use Reflector;
-use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Factory as GenericsResolverFactory;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Extractor as GenericsExtractor;
 
 class ReflectorScopeResolver
 {
 	public function __construct(
 		/** @readonly */
-		private GenericsResolverFactory $genericsResolverFactory,
+		private GenericsExtractor $genericsExtractor,
 	) {
 		//
 	}
@@ -45,7 +45,7 @@ class ReflectorScopeResolver
 					line: ($line = $reflector->getStartLine()) === false ? null : $line,
 					class: ($class = $reflector->getDeclaringClass())->getName(),
 					comment: (string)$reflector->getDocComment(),
-					genericsResolver: $this->genericsResolverFactory->extractFromReflector($class),
+					genericsResolver: $this->genericsExtractor->extractFromReflector($class),
 				);
 
 			case $reflector instanceof ReflectionFunction:
@@ -64,7 +64,7 @@ class ReflectorScopeResolver
 					line: ($line = $class->getStartLine()) === false ? null : $line,
 					class: $class->getName(),
 					comment: (string)$reflector->getDocComment(),
-					genericsResolver: $this->genericsResolverFactory->extractFromReflector($class),
+					genericsResolver: $this->genericsExtractor->extractFromReflector($class),
 				);
 
 			case $reflector instanceof ReflectionProperty:
@@ -74,7 +74,7 @@ class ReflectorScopeResolver
 					line: ($line = $class->getStartLine()) === false ? null : $line,
 					class: $class->getName(),
 					comment: (string)$reflector->getDocComment(),
-					genericsResolver: $this->genericsResolverFactory->extractFromReflector($class),
+					genericsResolver: $this->genericsExtractor->extractFromReflector($class),
 				);
 
 			default:

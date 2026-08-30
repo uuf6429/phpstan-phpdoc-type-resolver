@@ -206,7 +206,7 @@ final class ReflectorScopeResolverTest extends TestCase
 		yield 'ReflectionEnum' => [
 			'expectedResult' => new Scope(
 				file: \dirname(__DIR__) . \DIRECTORY_SEPARATOR . 'Fixtures' . \DIRECTORY_SEPARATOR . 'PHP81' . \DIRECTORY_SEPARATOR . 'IntegerEnum.php',
-				line: 5,
+				line: 7,
 				class: IntegerEnum::class,
 				comment: '',
 				genericsResolver: new GenericTypeMap(),
@@ -219,7 +219,7 @@ final class ReflectorScopeResolverTest extends TestCase
 		yield 'ReflectionEnumUnitCase' => [
 			'expectedResult' => new Scope(
 				file: \dirname(__DIR__) . \DIRECTORY_SEPARATOR . 'Fixtures' . \DIRECTORY_SEPARATOR . 'PHP81' . \DIRECTORY_SEPARATOR . 'PlainEnum.php',
-				line: 5,
+				line: 7,
 				class: PlainEnum::class,
 				comment: '',
 				genericsResolver: new GenericTypeMap(
@@ -237,7 +237,7 @@ final class ReflectorScopeResolverTest extends TestCase
 		yield 'ReflectionEnumBackedCase' => [
 			'expectedResult' => new Scope(
 				file: \dirname(__DIR__) . \DIRECTORY_SEPARATOR . 'Fixtures' . \DIRECTORY_SEPARATOR . 'PHP81' . \DIRECTORY_SEPARATOR . 'StringEnum.php',
-				line: 5,
+				line: 7,
 				class: StringEnum::class,
 				comment: '',
 				genericsResolver: new GenericTypeMap(

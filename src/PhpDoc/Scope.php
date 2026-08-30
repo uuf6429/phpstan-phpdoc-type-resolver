@@ -34,4 +34,17 @@ class Scope
 	) {
 		//
 	}
+
+	/**
+	 * @return array{file: null|string, line: null|int, class: null|string, comment: string}
+	 */
+	public function toArray(): array
+	{
+		return [
+			'file' => $this->file,
+			'line' => $this->line,
+			'class' => $this->class,
+			'comment' => $this->comment,
+		];
+	}
 }

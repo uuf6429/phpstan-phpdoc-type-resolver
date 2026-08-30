@@ -130,14 +130,12 @@ class Factory
 	{
 		/** @var list<PhpDocTagNode<TypeAliasTagValueNode>> $tags */
 		$tags = $docNode->getTagsByName('@phpstan-type');
-		if ($currentClass === null && count($tags) > 0) {
-			throw new RuntimeException('PHPStan local type requires a class');
-		}
 		foreach ($tags as $tag) {
 			yield $tag->value->alias => new TypeDefTypeNode(
 				name: $tag->value->alias,
 				type: $this->getTypeResolver()->resolve($scope, $tag->value->type, $this->getGenericsResolver()),
-				declaringClass: $currentClass,
+				declaringClass: $currentClass
+				?? throw new RuntimeException('PHPStan local type requires a class'),
 			);
 		}
 	}

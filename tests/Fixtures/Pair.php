@@ -24,9 +24,9 @@ abstract class Pair
 	abstract public static function makeArrayString(int $index, string $value): self;
 
 	/**
-	 * @phpstan-ignore-next-line
 	 * @template TValue of mixed
 	 * @return Pair<int, TValue>
+	 * @phpstan-ignore method.templateTypeNotInParameter
 	 */
 	abstract public static function makeArrayValue(int $index, mixed $value): self;
 

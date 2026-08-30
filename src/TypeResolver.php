@@ -30,37 +30,88 @@ class TypeResolver
 
 	/**
 	 * @see https://phpstan.org/writing-php-code/phpdoc-types
+	 * @var array<string, true>
 	 */
 	private const BASIC_TYPES = [
-		'int', 'integer',
-		'string',
-		'array-key',
-		'bool', 'boolean',
-		'true',
-		'false',
-		'null',
-		'float', 'double',
-		'scalar',
-		'array', 'non-empty-array', 'list', 'non-empty-list',
-		'iterable',
-		'callable', 'pure-callable', 'pure-Closure',
-		'resource', 'closed-resource', 'open-resource',
-		'object',
-		'mixed',
-		'positive-int', 'negative-int', 'non-positive-int', 'non-negative-int', 'non-zero-int',
-		'class-string', 'callable-string', 'numeric-string', 'non-empty-string', 'non-falsy-string', 'truthy-string', 'literal-string',
-		'void', 'never', 'never-return', 'never-returns', 'no-return',
-		'int-mask', 'int-mask-of',
-		'key-of', 'value-of',
+		'int' => true,
+		'integer' => true,
+		'string' => true,
+		'array-key' => true,
+		'bool' => true,
+		'boolean' => true,
+		'true' => true,
+		'false' => true,
+		'null' => true,
+		'float' => true,
+		'double' => true,
+		'scalar' => true,
+		'array' => true,
+		'non-empty-array' => true,
+		'list' => true,
+		'non-empty-list' => true,
+		'iterable' => true,
+		'callable' => true,
+		'pure-callable' => true,
+		'pure-Closure' => true,
+		'resource' => true,
+		'closed-resource' => true,
+		'open-resource' => true,
+		'object' => true,
+		'mixed' => true,
+		'positive-int' => true,
+		'negative-int' => true,
+		'non-positive-int' => true,
+		'non-negative-int' => true ,
+		'non-zero-int' => true,
+		'class-string' => true,
+		'callable-string' => true,
+		'numeric-string' => true,
+		'non-empty-string' => true,
+		'non-falsy-string' => true ,
+		'truthy-string' => true,
+		'literal-string' => true,
+		'void' => true ,
+		'never' => true,
+		'never-return' => true,
+		'never-returns' => true,
+		'no-return' => true,
+		'int-mask' => true,
+		'int-mask-of' => true,
+		'key-of' => true ,
+		'value-of' => true,
 	];
 
-	private const RELATIVE_TYPES = ['self', 'static', '$this', 'parent'];
+	/**
+	 * @var array<string, true>
+	 */
+	private const RELATIVE_TYPES = [
+		'self' => true,
+		'static' => true,
+		'$this' => true,
+		'parent' => true,
+	];
 
-	private const RANGE_TYPES = ['int'];
+	/**
+	 * @var array<string, true>
+	 */
+	private const RANGE_TYPES = [
+		'int' => true,
+	];
 
-	private const RANGE_UTILITY_TYPES = ['min', 'max'];
+	/**
+	 * @var array<string, true>
+	 */
+	private const RANGE_UTILITY_TYPES = [
+		'min' => true,
+		'max' => true,
+	];
 
-	private const GENERIC_UTILITY_TYPES = ['new'];
+	/**
+	 * @var array<string, true>
+	 */
+	private const GENERIC_UTILITY_TYPES = [
+		'new' => true,
+	];
 
 	/**
 	 * @readonly
@@ -268,7 +319,7 @@ class TypeResolver
 			=> new PhpDoc\TemplateTagValueNode(
 				name: $orig->name,
 				bound: $this->resolveType($scope, $orig->bound, $genericResolver, Type\TypeNode::class, true),
-				description: $orig->description ?: '',
+				description: $orig->description,
 				default: $this->resolveType($scope, $orig->default, $genericResolver, Type\TypeNode::class, true),
 			),
 
@@ -286,20 +337,24 @@ class TypeResolver
 
 	private function resolveGenericType(Scope $scope, Type\GenericTypeNode $orig, GenericsResolver $genericResolver): Type\GenericTypeNode
 	{
-		return in_array($orig->type->name, self::BASIC_TYPES)
+		return isset(self::BASIC_TYPES[$orig->type->name])
 			? $this->resolveGenericBasicType($scope, $orig, $genericResolver)
 			: $this->resolveGenericClassType($scope, $orig, $genericResolver);
 	}
 
 	private function resolveGenericBasicType(Scope $scope, Type\GenericTypeNode $orig, GenericsResolver $genericResolver): TemplateGenericTypeNode|ConcreteGenericTypeNode
 	{
-		$isIntRange = $orig->type instanceof Type\IdentifierTypeNode && in_array($orig->type->name, self::RANGE_TYPES);
-		$isGenericUtilityType = $orig->type instanceof Type\IdentifierTypeNode && in_array($orig->type->name, self::GENERIC_UTILITY_TYPES);
+		$isIntRange = isset(self::RANGE_TYPES[$orig->type->name]);
+		$isGenericUtilityType = isset(self::GENERIC_UTILITY_TYPES[$orig->type->name]);
 
-		$convertedType = $isGenericUtilityType ? $orig->type : $this->resolveType($scope, $orig->type, $genericResolver, Type\IdentifierTypeNode::class, false);
+		$convertedType = $isGenericUtilityType
+			? $orig->type
+			: $this->resolveType($scope, $orig->type, $genericResolver, Type\IdentifierTypeNode::class, false);
 		$convertedGenericTypes = array_map(
-			fn(Type\TypeNode $item): Type\TypeNode => ($isIntRange && $item instanceof Type\IdentifierTypeNode && in_array($item->name, self::RANGE_UTILITY_TYPES))
-				? $item : $this->resolveType($scope, $item, $genericResolver, Type\TypeNode::class, false),
+			fn(Type\TypeNode $item): Type\TypeNode =>
+			($isIntRange && $item instanceof Type\IdentifierTypeNode && isset(self::RANGE_UTILITY_TYPES[$item->name]))
+				? $item
+				: $this->resolveType($scope, $item, $genericResolver, Type\TypeNode::class, false),
 			$orig->genericTypes,
 		);
 
@@ -320,8 +375,10 @@ class TypeResolver
 
 	private function resolveGenericClassType(Scope $scope, Type\GenericTypeNode $orig, GenericsResolver $genericResolver): TemplateGenericTypeNode|ConcreteGenericTypeNode
 	{
-		$isGenericUtilityType = $orig->type instanceof Type\IdentifierTypeNode && in_array($orig->type->name, self::GENERIC_UTILITY_TYPES);
-		$convertedType = $isGenericUtilityType ? $orig->type : $this->resolveType($scope, $orig->type, $genericResolver, Type\IdentifierTypeNode::class, false);
+		$isGenericUtilityType = isset(self::GENERIC_UTILITY_TYPES[$orig->type->name]);
+		$convertedType = $isGenericUtilityType
+			? $orig->type
+			: $this->resolveType($scope, $orig->type, $genericResolver, Type\IdentifierTypeNode::class, false);
 
 		$convertedGenericTypes = array_map(
 			fn(Type\TypeNode $item): Type\TypeNode => $this->resolveType($scope, $item, $genericResolver, Type\TypeNode::class, false),
@@ -358,7 +415,7 @@ class TypeResolver
 		return match (true) {
 			$orig->type->name === 'key-of',
 			$orig->type->name === 'value-of',
-			=> $orig->genericTypes,
+			=> array_values($orig->genericTypes),
 
 			$orig->type->name === 'int'
 			=> match (count($orig->genericTypes)) {
@@ -430,7 +487,7 @@ class TypeResolver
 
 	private function resolveRelativeTypes(Scope $scope, string $symbol): ?Type\IdentifierTypeNode
 	{
-		if (!in_array($symbol, self::RELATIVE_TYPES, true)) {
+		if (!isset(self::RELATIVE_TYPES[$symbol])) {
 			return null;
 		}
 
@@ -449,7 +506,7 @@ class TypeResolver
 
 	private function resolveBasicType(string $symbol): ?Type\IdentifierTypeNode
 	{
-		return in_array($symbol, self::BASIC_TYPES, true)
+		return isset(self::BASIC_TYPES[$symbol])
 			? new Type\IdentifierTypeNode($symbol)
 			: null;
 	}
@@ -479,9 +536,7 @@ class TypeResolver
 
 	private function resolveNamespacedType(Scope $scope, string $symbol): ?Type\IdentifierTypeNode
 	{
-		$namespace = $this->importsResolver->getNamespace($scope);
-
-		return $namespace !== null ? $this->resolveClassLike("$namespace\\$symbol") : null;
+		return $this->resolveClassLike("{$this->importsResolver->getNamespace($scope)}\\$symbol");
 	}
 
 	private function resolveClassLike(string $symbol): ?Type\IdentifierTypeNode

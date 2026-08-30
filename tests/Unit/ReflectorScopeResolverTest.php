@@ -68,12 +68,12 @@ final class ReflectorScopeResolverTest extends TestCase
 			$this->expectExceptionMessage($expectedException->getMessage());
 		}
 
-		$actualResult = (array)$resolver->resolve($reflector);
-		if (isset($actualResult['file'])) {
+		$actualResult = $resolver->resolve($reflector)->toArray();
+		if ($actualResult['file'] !== null) {
 			$actualResult['file'] = str_replace(DIRECTORY_SEPARATOR, '/', $actualResult['file']);
 		}
-		$expectedResult = (array)$expectedResult;
-		if (isset($expectedResult['file'])) {
+		$expectedResult = $expectedResult?->toArray();
+		if ($expectedResult !== null && $expectedResult['file'] !== null) {
 			$expectedResult['file'] = str_replace(DIRECTORY_SEPARATOR, '/', $expectedResult['file']);
 		}
 

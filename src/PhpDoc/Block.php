@@ -105,7 +105,7 @@ class Block
 			throw new MultipleTagsFoundException($name);
 		}
 
-		return $this->resolveTypesInTag(array_values($tags)[0]->value);
+		return $this->resolveTypesInTag(array_values($tags)[0]->value ?? null);
 	}
 
 	public function hasTag(string $name): bool

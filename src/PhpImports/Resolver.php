@@ -20,22 +20,22 @@ class Resolver
 	 */
 	public function getImports(Scope $scope): array
 	{
-		return $this->getFile($scope->file)->getImportsAt($scope->line);
+		return $this->getFile((string)$scope->file)->getImportsAt($scope->line);
 	}
 
 	public function getNamespace(Scope $scope): string
 	{
-		return $this->getFile($scope->file)->getNamespaceAt($scope->line);
+		return $this->getFile((string)$scope->file)->getNamespaceAt($scope->line);
 	}
 
-	private function getFile(?string $file): File
+	private function getFile(string $file): File
 	{
 		return $this->cache[$file] ??= $this->loadFile($file);
 	}
 
-	private function loadFile(?string $file): File
+	private function loadFile(string $file): File
 	{
-		if ($file === null || ($content = @file_get_contents($file)) === false) {
+		if (($content = @file_get_contents($file)) === false) {
 			return new File([]);
 		}
 

@@ -39,7 +39,7 @@ final class Parser
 		$imports = [];
 		$lastLine = 0;
 		$lastToken = null;
-		while ($token = $this->next()) {
+		while (($token = $this->next()) !== null) {
 			switch (true) {
 				case $token->is(T_USE):
 					$namespace ??= '';
@@ -66,7 +66,7 @@ final class Parser
 			$lastToken = $token;
 		}
 
-		if ($lastToken && ($namespace !== null || !empty($imports))) {
+		if ($lastToken !== null && ($namespace !== null || $imports !== [])) {
 			$blocks[] = new Block(
 				startLine: $lastLine,
 				endLine: $lastToken->line,
@@ -102,7 +102,7 @@ final class Parser
 		$statements = [];
 		$explicitAlias = false;
 
-		while ($token = $this->next()) {
+		while (($token = $this->next()) !== null) {
 			switch (true) {
 				case !$explicitAlias && $token->is(T_STRING):
 					$class = $alias = $token->text;
@@ -156,7 +156,7 @@ final class Parser
 	private function parseNamespace(): string
 	{
 		$namespace = '';
-		while ($token = $this->next()) {
+		while (($token = $this->next()) !== null) {
 			if ($token->text === ';') {
 				return $namespace;
 			}

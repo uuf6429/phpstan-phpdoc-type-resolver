@@ -27,6 +27,8 @@ class TemplateTypeNode implements TypeNode
 
 	public function __toString(): string
 	{
-		return $this->bound ? "$this->name of $this->bound" : $this->name;
+		return $this->bound !== null
+			? "$this->name of $this->bound"
+			: $this->name;
 	}
 }

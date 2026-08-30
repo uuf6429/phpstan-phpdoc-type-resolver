@@ -20,9 +20,9 @@ use ReflectionParameter;
 use ReflectionProperty;
 use Reflector;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Factory as PhpDocFactory;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\AggregateFlag;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Extractor as GenericsExtractor;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Resolver;
-use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\AggregateFlag;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\SimpleFlag;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\ReflectorScopeResolver;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Scope;
@@ -52,7 +52,7 @@ final class ReflectorScopeResolverTest extends TestCase
 		null|Reflector|ReflectionAttribute $reflector,
 		?string                            $minPhpVersion = null,
 	): void {
-		if ($minPhpVersion !== null && version_compare(PHP_VERSION, $minPhpVersion, '>=')) {
+		if ($minPhpVersion !== null && version_compare($minPhpVersion, PHP_VERSION, '>=')) {
 			// @phpstan-ignore staticMethod.dynamicCall
 			$this->markTestSkipped("PHP $minPhpVersion required, but current PHP version is " . PHP_VERSION);
 		}

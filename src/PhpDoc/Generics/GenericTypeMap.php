@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver;
+namespace uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Generics;
 
 use PHPStan\PhpDocParser\Ast\Type\TypeNode;
 

@@ -11,6 +11,11 @@ return (new PhpCsFixer\Config())
 		'@PER-CS3x0:risky' => true,
 		'cast_spaces' => ['space' => 'none'],
 		'declare_strict_types' => true,
+		'yoda_style' => [
+			'equal' => false,
+			'identical' => false,
+			'less_and_greater' => false,
+		],
 	])
 	->setFinder(
 		(new PhpCsFixer\Finder())

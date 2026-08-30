@@ -71,7 +71,7 @@ $reflector = new \ReflectionMethod(\uuf6429\PHPStanPHPDocTypeResolverTests\Fixtu
 
 // Use the scope resolver to get information about that method
 $phpDocResolverFactory = new \uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Factory();
-$genericsExtractor = new \uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Extractor($phpDocResolverFactory);
+$genericsExtractor = new \uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Generics\Extractor($phpDocResolverFactory);
 $scopeResolver = new \uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\ReflectorScopeResolver($genericsExtractor);
 $scope = $scopeResolver->resolve($reflector);
 
@@ -131,7 +131,7 @@ $scope = new \uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Scope(
     class: 'My\Project\Services\Greeter',
     // The actualy PHPDoc block containing the type we're interested in
     comment: "/**\n * @param PersonEntity|object{name: string} \$person\n */",
-    genericsResolver: new \uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\GenericTypeMap(),
+    genericsResolver: new \uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Generics\GenericTypeMap(),
 );
 
 // The factory can also be used with a custom scope

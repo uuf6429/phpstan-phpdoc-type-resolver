@@ -47,7 +47,7 @@ final class Parser
 					break;
 
 				case $token->is(T_NAMESPACE):
-					if (null !== $namespace) {
+					if ($namespace !== null) {
 						$blocks[] = new Block(
 							startLine: $lastLine,
 							endLine: $token->line,
@@ -65,7 +65,7 @@ final class Parser
 			$lastToken = $token;
 		}
 
-		if (null !== $lastToken && (null !== $namespace || [] !== $imports)) {
+		if ($lastToken !== null && ($namespace !== null || $imports !== [])) {
 			$blocks[] = new Block(
 				startLine: $lastLine,
 				endLine: $lastToken->line,
@@ -128,22 +128,22 @@ final class Parser
 					$alias = '';
 					break;
 
-				case ',' === $token->text:
+				case $token->text === ',':
 					$statements[strtolower($alias)] = $groupRoot . $class;
 					$class = $alias = '';
 					$explicitAlias = false;
 					break;
 
-				case '{' === $token->text:
+				case $token->text === '{':
 					$groupRoot = $class;
 					$class = '';
 					break;
 
-				case '}' === $token->text:
+				case $token->text === '}':
 					break;
 
-				case ';' === $token->text:
-					if ('' !== $alias) {
+				case $token->text === ';':
+					if ($alias !== '') {
 						$statements[strtolower($alias)] = $groupRoot . $class;
 					}
 					break 2;
@@ -157,7 +157,7 @@ final class Parser
 	{
 		$namespace = '';
 		while (($token = $this->next()) !== null) {
-			if (';' === $token->text || '{' === $token->text) {
+			if ($token->text === ';' || $token->text === '{') {
 				return $namespace;
 			}
 

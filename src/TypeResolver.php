@@ -10,8 +10,8 @@ use PHPStan\PhpDocParser\Ast\Type;
 use PHPStan\PhpDocParser\Ast\Type\CallableTypeParameterNode;
 use PHPStan\PhpDocParser\Ast\Type\TypeNode;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Factory as PhpDocFactory;
-use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Extractor as GenericsExtractor;
-use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\GenericTypeMap as GenericsResolver;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Generics\Extractor as GenericsExtractor;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Generics\GenericTypeMap as GenericsResolver;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Scope;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\AbstractGenericTypeNode;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\ConcreteGenericTypeNode;
@@ -184,7 +184,7 @@ class TypeResolver
 		}
 
 		$result = match (true) {
-			null === $orig => null,
+			$orig === null => null,
 
 			$orig instanceof Type\InvalidTypeNode => $orig,
 
@@ -237,7 +237,7 @@ class TypeResolver
 			),
 
 			$orig instanceof Type\ConstTypeNode => match (true) {
-				null === $constExpr,
+				$constExpr === null,
 				$constExpr instanceof ConstExpr\ConstExprFalseNode,
 				$constExpr instanceof ConstExpr\ConstExprFloatNode,
 				$constExpr instanceof ConstExpr\ConstExprIntegerNode,
@@ -335,7 +335,7 @@ class TypeResolver
 		};
 
 		\assert(
-			($nullable && null === $result) || (\is_object($result) && is_a($result, $asClass)),
+			($nullable && $result === null) || (\is_object($result) && is_a($result, $asClass)),
 			'Expected a result of ' . ($nullable ? "?{$asClass}" : $asClass) . ' but got ' . get_debug_type($result) . ' instead',
 		);
 
@@ -517,7 +517,7 @@ class TypeResolver
 	private function isUnresolvedTemplateReference(?TypeNode $result, string $symbol): bool
 	{
 		return match (true) {
-			$result instanceof TemplateTypeNode => null === $result->bound && $result->name === $symbol,
+			$result instanceof TemplateTypeNode => $result->bound === null && $result->name === $symbol,
 			$result instanceof Type\IdentifierTypeNode => $result->name === $symbol,
 			default => false,
 		};
@@ -529,11 +529,11 @@ class TypeResolver
 			return null;
 		}
 
-		if (null === $scope->class) {
+		if ($scope->class === null) {
 			throw new \LogicException("Cannot resolve `{$symbol}`, no class was defined in the current scope");
 		}
 
-		if ('parent' === $symbol) {
+		if ($symbol === 'parent') {
 			return ($parent = get_parent_class($scope->class)) !== false
 				? new Type\IdentifierTypeNode($parent)
 				: throw new \LogicException("Class/type `{$scope->class}` doesn't have a parent");
@@ -555,7 +555,7 @@ class TypeResolver
 
 		[$top, $rest] = explode('\\', $symbol, 2) + ['', ''];
 
-		if ('' !== $top) {
+		if ($top !== '') {
 			$alias = strtolower($top);
 		}
 

@@ -25,9 +25,6 @@ class TypeDefTypeNode implements TypeNode
 		public string $declaringClass,
 	) {}
 
-	/**
-	 * @codeCoverageIgnore
-	 */
 	#[\Override]
 	public function __toString(): string
 	{

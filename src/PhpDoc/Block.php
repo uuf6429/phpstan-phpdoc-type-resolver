@@ -9,8 +9,8 @@ use PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocTagNode;
 use PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocTagValueNode;
 use PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocTextNode;
 use PHPStan\PhpDocParser\Ast\Type\TypeNode;
-use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Extractor as GenericsExtractor;
-use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\GenericTypeMap as GenericsResolver;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Generics\Extractor as GenericsExtractor;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Generics\GenericTypeMap as GenericsResolver;
 use uuf6429\PHPStanPHPDocTypeResolver\TypeResolver;
 
 /**
@@ -38,7 +38,7 @@ class Block
 				break;
 			}
 
-			if ('' !== trim($child->text)) {
+			if (trim($child->text) !== '') {
 				return $child->text;
 			}
 		}
@@ -57,7 +57,7 @@ class Block
 			}
 
 			if (!$summaryFound) {
-				$summaryFound = '' !== trim($child->text);
+				$summaryFound = trim($child->text) !== '';
 
 				continue;
 			}
@@ -76,7 +76,7 @@ class Block
 		return array_values(
 			array_map(
 				fn(PhpDocTagNode $tag): PhpDocTagValueNode => $this->resolveTypesInTag($tag->value),
-				null !== $name ? $this->docNode->getTagsByName($name) : $this->docNode->getTags(),
+				$name !== null ? $this->docNode->getTagsByName($name) : $this->docNode->getTags(),
 			),
 		);
 	}
@@ -145,7 +145,7 @@ class Block
 	 */
 	private function resolveTypesInTag(?PhpDocTagValueNode $tag): ?PhpDocTagValueNode
 	{
-		if (null === $tag) {
+		if ($tag === null) {
 			return null;
 		}
 

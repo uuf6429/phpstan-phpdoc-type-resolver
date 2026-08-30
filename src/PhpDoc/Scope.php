@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace uuf6429\PHPStanPHPDocTypeResolver\PhpDoc;
 
-use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\GenericTypeMap;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Generics\GenericTypeMap;
 
 class Scope
 {

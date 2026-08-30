@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace uuf6429\PHPStanPHPDocTypeResolver\PhpDoc;
 
-use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Extractor as GenericsExtractor;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Generics\Extractor as GenericsExtractor;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Generics\GenericTypeMap;
 
 class ReflectorScopeResolver
 {
@@ -25,7 +26,7 @@ class ReflectorScopeResolver
 					line: ($line = $reflector->getStartLine()) === false ? null : $line,
 					class: $reflector->getName(),
 					comment: (string)$reflector->getDocComment(),
-					genericsResolver: new GenericsResolver\GenericTypeMap(),
+					genericsResolver: new GenericTypeMap(),
 				);
 
 			case $reflector instanceof \ReflectionMethod:
@@ -43,7 +44,7 @@ class ReflectorScopeResolver
 					line: ($line = $reflector->getStartLine()) === false ? null : $line,
 					class: $reflector->getClosureScopeClass()?->getName(),
 					comment: (string)$reflector->getDocComment(),
-					genericsResolver: new GenericsResolver\GenericTypeMap(),
+					genericsResolver: new GenericTypeMap(),
 				);
 
 			case $reflector instanceof \ReflectionClassConstant:

@@ -13,8 +13,8 @@ use PHPStan\PhpDocParser\Ast\Type;
 use PHPStan\PhpDocParser\Parser\ParserException;
 use PHPUnit\Framework\TestCase;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Factory;
-use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Extractor as GenericsExtractor;
-use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\GenericTypeMap;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Generics\Extractor as GenericsExtractor;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Generics\GenericTypeMap;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Scope;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\ConcreteGenericTypeNode;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\TemplateGenericTypeNode;
@@ -30,8 +30,6 @@ use function uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\getTypeResolverTest
 
 /**
  * @internal
- *
- * @coversNothing
  */
 final class TypeResolverTest extends TestCase
 {
@@ -42,7 +40,7 @@ final class TypeResolverTest extends TestCase
 	 */
 	public function testReturnType(\Reflector $reflector, ?Type\TypeNode $expectedReturnType, ?string $minPhpVersion = null): void
 	{
-		if (null !== $minPhpVersion && version_compare(PHP_VERSION, $minPhpVersion, '>=')) {
+		if ($minPhpVersion !== null && version_compare(PHP_VERSION, $minPhpVersion, '>=')) {
 			self::markTestSkipped("PHP {$minPhpVersion} required, but current PHP version is " . PHP_VERSION);
 		}
 

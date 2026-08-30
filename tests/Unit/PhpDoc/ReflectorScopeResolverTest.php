@@ -2,17 +2,16 @@
 
 declare(strict_types=1);
 
-namespace uuf6429\PHPStanPHPDocTypeResolverTests\Unit;
+namespace uuf6429\PHPStanPHPDocTypeResolverTests\Unit\PhpDoc;
 
 use PHPStan\PhpDocParser\Ast\ConstExpr\ConstExprStringNode;
 use PHPStan\PhpDocParser\Ast\Type;
 use PHPUnit\Framework\TestCase;
-use Reflector;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Factory as PhpDocFactory;
-use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\AggregateFlag;
-use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Extractor as GenericsExtractor;
-use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\GenericTypeMap;
-use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\SimpleFlag;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Generics\AggregateFlag;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Generics\Extractor as GenericsExtractor;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Generics\GenericTypeMap;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Generics\SimpleFlag;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\ReflectorScopeResolver;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Scope;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\TypeDefTypeNode;
@@ -27,8 +26,6 @@ use function uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\getFunctionWithPara
 
 /**
  * @internal
- *
- * @coversNothing
  */
 final class ReflectorScopeResolverTest extends TestCase
 {
@@ -43,16 +40,16 @@ final class ReflectorScopeResolverTest extends TestCase
 		\ReflectionAttribute|\Reflector|null $reflector,
 		?string $minPhpVersion = null,
 	): void {
-		if (null !== $minPhpVersion && version_compare($minPhpVersion, PHP_VERSION, '>=')) {
+		if ($minPhpVersion !== null && version_compare($minPhpVersion, PHP_VERSION, '>=')) {
 			self::markTestSkipped("PHP {$minPhpVersion} required, but current PHP version is " . PHP_VERSION);
 		}
-		if (null === $reflector) {
+		if ($reflector === null) {
 			self::markTestSkipped('Reflector could not be constructed');
 		}
 
 		$resolver = new ReflectorScopeResolver(new GenericsExtractor(new PhpDocFactory()));
 
-		if (null !== $expectedException) {
+		if ($expectedException !== null) {
 			$this->expectException(\get_class($expectedException));
 			$this->expectExceptionMessage($expectedException->getMessage());
 		}
@@ -60,7 +57,7 @@ final class ReflectorScopeResolverTest extends TestCase
 		$actualResult = $resolver->resolve($reflector);
 
 		self::assertSame(
-			null === $expectedResult ? null : [
+			$expectedResult === null ? null : [
 				'file' => $expectedResult->file,
 				'line' => $expectedResult->line,
 				'class' => $expectedResult->class,
@@ -82,6 +79,8 @@ final class ReflectorScopeResolverTest extends TestCase
 	 */
 	public static function provideReflectorScopeResolverCases(): iterable
 	{
+		$fixturesDir = \dirname(__DIR__, 2) . \DIRECTORY_SEPARATOR . 'Fixtures' . \DIRECTORY_SEPARATOR;
+
 		$importedTypesMap = [
 			'TColors' => new TypeDefTypeNode(
 				name: 'TColors',
@@ -137,7 +136,7 @@ final class ReflectorScopeResolverTest extends TestCase
 
 		yield 'ReflectionProperty' => [
 			'expectedResult' => new Scope(
-				file: \dirname(__DIR__) . \DIRECTORY_SEPARATOR . 'Fixtures' . \DIRECTORY_SEPARATOR . 'ObjectTestFixture.php',
+				file: "{$fixturesDir}ObjectTestFixture.php",
 				line: 13,
 				class: ObjectTestFixture::class,
 				comment: <<<'PHP'
@@ -167,7 +166,7 @@ final class ReflectorScopeResolverTest extends TestCase
 
 		yield 'ReflectionClass' => [
 			'expectedResult' => new Scope(
-				file: \dirname(__DIR__) . \DIRECTORY_SEPARATOR . 'Fixtures' . \DIRECTORY_SEPARATOR . 'ObjectTestFixture.php',
+				file: "{$fixturesDir}ObjectTestFixture.php",
 				line: 13,
 				class: ObjectTestFixture::class,
 				comment: <<<'PHP'
@@ -186,7 +185,7 @@ final class ReflectorScopeResolverTest extends TestCase
 
 		yield 'ReflectionObject' => [
 			'expectedResult' => new Scope(
-				file: \dirname(__DIR__) . \DIRECTORY_SEPARATOR . 'Fixtures' . \DIRECTORY_SEPARATOR . 'ObjectTestFixture.php',
+				file: "{$fixturesDir}ObjectTestFixture.php",
 				line: 13,
 				class: ObjectTestFixture::class,
 				comment: <<<'PHP'
@@ -205,7 +204,7 @@ final class ReflectorScopeResolverTest extends TestCase
 
 		yield 'ReflectionEnum' => [
 			'expectedResult' => new Scope(
-				file: \dirname(__DIR__) . \DIRECTORY_SEPARATOR . 'Fixtures' . \DIRECTORY_SEPARATOR . 'PHP81' . \DIRECTORY_SEPARATOR . 'IntegerEnum.php',
+				file: "{$fixturesDir}PHP81" . \DIRECTORY_SEPARATOR . 'IntegerEnum.php',
 				line: 7,
 				class: IntegerEnum::class,
 				comment: '',
@@ -218,7 +217,7 @@ final class ReflectorScopeResolverTest extends TestCase
 
 		yield 'ReflectionEnumUnitCase' => [
 			'expectedResult' => new Scope(
-				file: \dirname(__DIR__) . \DIRECTORY_SEPARATOR . 'Fixtures' . \DIRECTORY_SEPARATOR . 'PHP81' . \DIRECTORY_SEPARATOR . 'PlainEnum.php',
+				file: "{$fixturesDir}PHP81" . \DIRECTORY_SEPARATOR . 'PlainEnum.php',
 				line: 7,
 				class: PlainEnum::class,
 				comment: '',
@@ -236,7 +235,7 @@ final class ReflectorScopeResolverTest extends TestCase
 
 		yield 'ReflectionEnumBackedCase' => [
 			'expectedResult' => new Scope(
-				file: \dirname(__DIR__) . \DIRECTORY_SEPARATOR . 'Fixtures' . \DIRECTORY_SEPARATOR . 'PHP81' . \DIRECTORY_SEPARATOR . 'StringEnum.php',
+				file: "{$fixturesDir}PHP81" . \DIRECTORY_SEPARATOR . 'StringEnum.php',
 				line: 7,
 				class: StringEnum::class,
 				comment: '',
@@ -267,7 +266,7 @@ final class ReflectorScopeResolverTest extends TestCase
 		*/
 		yield 'ReflectionClassConstant' => [
 			'expectedResult' => new Scope(
-				file: \dirname(__DIR__) . \DIRECTORY_SEPARATOR . 'Fixtures' . \DIRECTORY_SEPARATOR . 'ObjectTestFixture.php',
+				file: "{$fixturesDir}ObjectTestFixture.php",
 				line: 13,
 				class: ObjectTestFixture::class,
 				comment: '',
@@ -285,7 +284,7 @@ final class ReflectorScopeResolverTest extends TestCase
 
 		yield 'ReflectionMethod' => [
 			'expectedResult' => new Scope(
-				file: \dirname(__DIR__) . \DIRECTORY_SEPARATOR . 'Fixtures' . \DIRECTORY_SEPARATOR . 'ObjectTestFixture.php',
+				file: "{$fixturesDir}ObjectTestFixture.php",
 				line: 38,
 				class: ObjectTestFixture::class,
 				comment: <<<'PHP'
@@ -312,7 +311,7 @@ final class ReflectorScopeResolverTest extends TestCase
 
 		yield 'ReflectionFunction' => [
 			'expectedResult' => new Scope(
-				file: \dirname(__DIR__) . \DIRECTORY_SEPARATOR . 'Fixtures' . \DIRECTORY_SEPARATOR . 'functions.php',
+				file: "{$fixturesDir}functions.php",
 				line: 54,
 				class: null,
 				comment: <<<'PHP'

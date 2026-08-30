@@ -8,8 +8,6 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
- *
- * @coversNothing
  */
 final class ReadmeSnippetsTest extends TestCase
 {
@@ -34,7 +32,7 @@ final class ReadmeSnippetsTest extends TestCase
 	public static function provideSnippetCases(): iterable
 	{
 		$content = file_get_contents(self::README_FILE);
-		if (false === $content) {
+		if ($content === false) {
 			throw new \RuntimeException('File could not be read: ' . self::README_FILE);
 		}
 

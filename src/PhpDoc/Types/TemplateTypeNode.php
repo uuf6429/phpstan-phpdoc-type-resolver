@@ -26,7 +26,7 @@ class TemplateTypeNode implements TypeNode
 	#[\Override]
 	public function __toString(): string
 	{
-		return null !== $this->bound
+		return $this->bound !== null
 			? "{$this->name} of {$this->bound}"
 			: $this->name;
 	}

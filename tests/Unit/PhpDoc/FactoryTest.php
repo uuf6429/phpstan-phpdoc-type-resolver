@@ -14,8 +14,6 @@ use uuf6429\PHPStanPHPDocTypeResolverTests\ReflectsValuesTrait;
 
 /**
  * @internal
- *
- * @coversNothing
  */
 final class FactoryTest extends TestCase
 {

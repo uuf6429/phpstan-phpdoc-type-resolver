@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace uuf6429\PHPStanPHPDocTypeResolver\PhpDoc;
 
 use PHPStan\PhpDocParser;
-use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Extractor as GenericsExtractor;
-use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\GenericTypeMap as GenericsResolver;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Generics\Extractor as GenericsExtractor;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Generics\GenericTypeMap as GenericsResolver;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpImports;
 use uuf6429\PHPStanPHPDocTypeResolver\TypeResolver;
 
@@ -92,7 +92,7 @@ class Factory
 			docNode: $this->parser->parse(
 				new PhpDocParser\Parser\TokenIterator(
 					$this->lexer->tokenize(
-						'' !== trim($scope->comment) ? $scope->comment : "/**\n */",
+						trim($scope->comment) !== '' ? $scope->comment : "/**\n */",
 					),
 				),
 			),

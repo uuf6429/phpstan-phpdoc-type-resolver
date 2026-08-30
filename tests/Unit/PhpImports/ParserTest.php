@@ -9,8 +9,6 @@ use uuf6429\PHPStanPHPDocTypeResolver\PhpImports\Parser;
 
 /**
  * @internal
- *
- * @coversNothing
  */
 final class ParserTest extends TestCase
 {

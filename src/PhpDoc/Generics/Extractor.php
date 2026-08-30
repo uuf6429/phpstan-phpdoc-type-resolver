@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver;
+namespace uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Generics;
 
 use PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocNode;
 use PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocTagNode;
@@ -103,7 +103,7 @@ class Extractor
 		foreach ($tags as $tag) {
 			yield $tag->value->name => new TemplateTypeNode(
 				name: $tag->value->name,
-				bound: null !== $tag->value->bound
+				bound: $tag->value->bound !== null
 					? $typeResolver->resolve($scope, $tag->value->bound, $genericsResolver)
 					: null,
 			);
@@ -184,11 +184,7 @@ class Extractor
 			throw new \RuntimeException('PHPStan type import tag should point to an IdentifierTypeNode, got `' . get_debug_type($node) . '` instead');
 		}
 
-		if (!class_exists($node->name)
-			&& !interface_exists($node->name)
-			&& !trait_exists($node->name)
-			&& !enum_exists($node->name)
-		) {
+		if (!$this->isClassLike($node->name)) {
 			throw new \RuntimeException("PHPStan type can only be imported from a simple class-like structure; symbol `{$node->name}` could not be found");
 		}
 

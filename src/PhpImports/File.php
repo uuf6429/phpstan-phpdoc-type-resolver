@@ -32,7 +32,7 @@ class File
 
 	private function getBlockAt(?int $line): ?Block
 	{
-		if (null === $line) {
+		if ($line === null) {
 			return null;
 		}
 

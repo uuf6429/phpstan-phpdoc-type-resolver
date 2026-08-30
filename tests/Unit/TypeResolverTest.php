@@ -1,9 +1,6 @@
 <?php
 
-/**
- * @noinspection PhpDocMissingThrowsInspection
- * @noinspection PhpUnhandledExceptionInspection
- */
+declare(strict_types=1);
 
 namespace uuf6429\PHPStanPHPDocTypeResolverTests\Unit;
 
@@ -15,7 +12,6 @@ use PHPStan\PhpDocParser\Ast\PhpDoc\ReturnTagValueNode;
 use PHPStan\PhpDocParser\Ast\PhpDoc\TemplateTagValueNode;
 use PHPStan\PhpDocParser\Ast\Type;
 use PHPStan\PhpDocParser\Parser\ParserException;
-use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Reflector;
 use RuntimeException;
@@ -34,569 +30,580 @@ use uuf6429\PHPStanPHPDocTypeResolverTests\ReflectsValuesTrait;
 use function uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\getTypeResolverTestClosureReturningImportedType;
 use function uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\getTypeResolverTestClosureReturningString;
 
-class TypeResolverTest extends TestCase
+/**
+ * @internal
+ */
+final class TypeResolverTest extends TestCase
 {
-    use ReflectsValuesTrait;
+	use ReflectsValuesTrait;
 
-    #[DataProvider('returnTypeDataProvider')]
-    public function testReturnType(Reflector $reflector, ?Type\TypeNode $expectedReturnType): void
-    {
-        $docBlock = Factory::createInstance()->createFromReflector($reflector);
+	/**
+	 * @dataProvider returnTypeDataProvider
+	 */
+	public function testReturnType(Reflector $reflector, ?Type\TypeNode $expectedReturnType, ?string $minPhpVersion = null): void
+	{
+		if ($minPhpVersion !== null && version_compare(PHP_VERSION, $minPhpVersion, '>=')) {
+			// @phpstan-ignore staticMethod.dynamicCall
+			$this->markTestSkipped("PHP $minPhpVersion required, but current PHP version is " . PHP_VERSION);
+		}
 
-        /** @var ReturnTagValueNode $returnTag */
-        $returnTag = $docBlock->getTag('@return');
+		$docBlock = Factory::createInstance()->createFromReflector($reflector);
 
-        $this->assertEquals($expectedReturnType, $returnTag->type);
-    }
+		/** @var ReturnTagValueNode $returnTag */
+		$returnTag = $docBlock->getTag('@return');
 
-    /**
-     * @return iterable<string, array{reflector: Reflector, expectedReturnType: ?Type\TypeNode}>
-     */
-    public static function returnTypeDataProvider(): iterable
-    {
-        $colorsTypeDef = new TypeDefTypeNode(
-            name: 'TColors',
-            type: new Type\ArrayShapeNode(
-                items: [
-                    new Type\ArrayShapeItemNode(
-                        keyName: new Type\IdentifierTypeNode('red'),
-                        optional: false,
-                        valueType: new Type\ConstTypeNode(constExpr: new ConstExprStringNode('#F00')),
-                    ),
-                    new Type\ArrayShapeItemNode(
-                        keyName: new Type\IdentifierTypeNode('green'),
-                        optional: false,
-                        valueType: new Type\ConstTypeNode(constExpr: new ConstExprStringNode('#0F0')),
-                    ),
-                    new Type\ArrayShapeItemNode(
-                        keyName: new Type\IdentifierTypeNode('blue'),
-                        optional: false,
-                        valueType: new Type\ConstTypeNode(constExpr: new ConstExprStringNode('#00F')),
-                    ),
-                ],
-                sealed: true,
-                kind: 'array',
-            ),
-            declaringClass: Fixtures\TypeResolverTestFixture::class,
-        );
+		$this->assertEquals($expectedReturnType, $returnTag->type);
+	}
 
-        yield 'return void' => [
-            'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnVoid']),
-            'expectedReturnType' => new Type\IdentifierTypeNode('void'),
-        ];
+	/**
+	 * @return iterable<string, array{reflector: Reflector, expectedReturnType: ?Type\TypeNode, minPhpVersion?: string}>
+	 */
+	public static function returnTypeDataProvider(): iterable
+	{
+		$colorsTypeDef = new TypeDefTypeNode(
+			name: 'TColors',
+			type: new Type\ArrayShapeNode(
+				items: [
+					new Type\ArrayShapeItemNode(
+						keyName: new Type\IdentifierTypeNode('red'),
+						optional: false,
+						valueType: new Type\ConstTypeNode(constExpr: new ConstExprStringNode('#F00')),
+					),
+					new Type\ArrayShapeItemNode(
+						keyName: new Type\IdentifierTypeNode('green'),
+						optional: false,
+						valueType: new Type\ConstTypeNode(constExpr: new ConstExprStringNode('#0F0')),
+					),
+					new Type\ArrayShapeItemNode(
+						keyName: new Type\IdentifierTypeNode('blue'),
+						optional: false,
+						valueType: new Type\ConstTypeNode(constExpr: new ConstExprStringNode('#00F')),
+					),
+				],
+				sealed: true,
+				kind: 'array',
+			),
+			declaringClass: Fixtures\TypeResolverTestFixture::class,
+		);
 
-        yield 'return nullable string' => [
-            'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnNullableString']),
-            'expectedReturnType' => new Type\NullableTypeNode(
-                new Type\IdentifierTypeNode('string'),
-            ),
-        ];
+		yield 'return void' => [
+			'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnVoid']),
+			'expectedReturnType' => new Type\IdentifierTypeNode('void'),
+		];
 
-        yield 'return boolean or integer' => [
-            'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnBoolOrInteger']),
-            'expectedReturnType' => new Type\UnionTypeNode([
-                new Type\IdentifierTypeNode('bool'),
-                new Type\IdentifierTypeNode('integer'),
-            ]),
-        ];
+		yield 'return nullable string' => [
+			'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnNullableString']),
+			'expectedReturnType' => new Type\NullableTypeNode(
+				new Type\IdentifierTypeNode('string'),
+			),
+		];
 
-        yield 'return namespaced class relative to current namespace' => [
-            'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnImplicitNamespaceClass']),
-            'expectedReturnType' => new Type\IdentifierTypeNode(Fixtures\Cases\Case1::class),
-        ];
+		yield 'return boolean or integer' => [
+			'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnBoolOrInteger']),
+			'expectedReturnType' => new Type\UnionTypeNode([
+				new Type\IdentifierTypeNode('bool'),
+				new Type\IdentifierTypeNode('integer'),
+			]),
+		];
 
-        yield 'return grouped namespace import' => [
-            'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnImportedGroupedNamespaceClass']),
-            'expectedReturnType' => new Type\UnionTypeNode([
-                new Type\IdentifierTypeNode(Fixtures\Cases\Case1::class),
-                new Type\IdentifierTypeNode(Fixtures\Cases\Case2::class),
-            ]),
-        ];
+		yield 'return namespaced class relative to current namespace' => [
+			'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnImplicitNamespaceClass']),
+			'expectedReturnType' => new Type\IdentifierTypeNode(Fixtures\Cases\Case1::class),
+		];
 
-        yield 'return self' => [
-            'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnSelf']),
-            'expectedReturnType' => new Type\IdentifierTypeNode(Fixtures\TypeResolverTestFixture::class),
-        ];
+		yield 'return grouped namespace import' => [
+			'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnImportedGroupedNamespaceClass']),
+			'expectedReturnType' => new Type\UnionTypeNode([
+				new Type\IdentifierTypeNode(Fixtures\Cases\Case1::class),
+				new Type\IdentifierTypeNode(Fixtures\Cases\Case2::class),
+			]),
+		];
 
-        yield 'return static' => [
-            'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnStatic']),
-            'expectedReturnType' => new Type\IdentifierTypeNode(Fixtures\TypeResolverTestFixture::class),
-        ];
+		yield 'return self' => [
+			'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnSelf']),
+			'expectedReturnType' => new Type\IdentifierTypeNode(Fixtures\TypeResolverTestFixture::class),
+		];
 
-        yield 'return this' => [
-            'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnThis']),
-            'expectedReturnType' => new Type\IdentifierTypeNode(Fixtures\TypeResolverTestFixture::class),
-        ];
+		yield 'return static' => [
+			'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnStatic']),
+			'expectedReturnType' => new Type\IdentifierTypeNode(Fixtures\TypeResolverTestFixture::class),
+		];
 
-        yield 'return string from function' => [
-            'reflector' => self::reflectFunction(
-                'uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\typeResolverTestFunctionReturningStringFixture',
-            ),
-            'expectedReturnType' => new Type\IdentifierTypeNode('string'),
-        ];
+		yield 'return this' => [
+			'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnThis']),
+			'expectedReturnType' => new Type\IdentifierTypeNode(Fixtures\TypeResolverTestFixture::class),
+		];
 
-        yield 'return imported class from function' => [
-            'reflector' => self::reflectFunction(
-                'uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\typeResolverTestFunctionReturningImportedClass',
-            ),
-            'expectedReturnType' => new Type\IdentifierTypeNode(SplFileInfo::class),
-        ];
+		yield 'return string from function' => [
+			'reflector' => self::reflectFunction(
+				'uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\typeResolverTestFunctionReturningStringFixture',
+			),
+			'expectedReturnType' => new Type\IdentifierTypeNode('string'),
+		];
 
-        yield 'return string from closure from function' => [
-            'reflector' => self::reflectFunction(getTypeResolverTestClosureReturningString()),
-            'expectedReturnType' => new Type\IdentifierTypeNode('string'),
-        ];
+		yield 'return imported class from function' => [
+			'reflector' => self::reflectFunction(
+				'uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\typeResolverTestFunctionReturningImportedClass',
+			),
+			'expectedReturnType' => new Type\IdentifierTypeNode(SplFileInfo::class),
+		];
 
-        yield 'return imported type from closure from function' => [
-            'reflector' => self::reflectFunction(getTypeResolverTestClosureReturningImportedType()),
-            'expectedReturnType' => new Type\IdentifierTypeNode('SplFileInfo'),
-        ];
+		yield 'return string from closure from function' => [
+			'reflector' => self::reflectFunction(getTypeResolverTestClosureReturningString()),
+			'expectedReturnType' => new Type\IdentifierTypeNode('string'),
+		];
 
-        yield 'return string from closure from method' => [
-            'reflector' => self::reflectFunction(Fixtures\TypeResolverTestFixture::getTypeResolverTestClosureReturningString()),
-            'expectedReturnType' => new Type\IdentifierTypeNode('string'),
-        ];
+		yield 'return imported type from closure from function' => [
+			'reflector' => self::reflectFunction(getTypeResolverTestClosureReturningImportedType()),
+			'expectedReturnType' => new Type\IdentifierTypeNode('SplFileInfo'),
+		];
 
-        yield 'return cases grouped by string key' => [
-            'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnArrayOfGroupedCases']),
-            'expectedReturnType' => new Type\ArrayShapeNode([
-                new Type\ArrayShapeItemNode(
-                    keyName: new ConstExprIntegerNode('1'),
-                    optional: false,
-                    valueType: new ConcreteGenericTypeNode(
-                        type: new Type\IdentifierTypeNode('list'),
-                        templateTypes: [
-                            new Type\IdentifierTypeNode('$value'),
-                        ],
-                        genericTypes: [
-                            new Type\IdentifierTypeNode(Fixtures\Cases\Case1::class),
-                        ],
-                        variances: [
-                            'invariant',
-                        ],
-                    ),
-                ),
-                new Type\ArrayShapeItemNode(
-                    keyName: new ConstExprIntegerNode('2'),
-                    optional: true,
-                    valueType: new Type\ArrayTypeNode(
-                        type: new Type\IdentifierTypeNode(Fixtures\Cases\Case2::class),
-                    ),
-                ),
-            ]),
-        ];
+		yield 'return string from closure from method' => [
+			'reflector' => self::reflectFunction(Fixtures\TypeResolverTestFixture::getTypeResolverTestClosureReturningString()),
+			'expectedReturnType' => new Type\IdentifierTypeNode('string'),
+		];
 
-        yield 'return cases wrapped in object' => [
-            'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnCasesJumpingWrappedInObject']),
-            'expectedReturnType' => new Type\ObjectShapeNode([
-                new Type\ObjectShapeItemNode(
-                    keyName: new ConstExprStringNode('jumpingCases'),
-                    optional: false,
-                    valueType: new Type\UnionTypeNode([
-                        new Type\IdentifierTypeNode('null'),
-                        new Type\ArrayTypeNode(
-                            type: new Type\IntersectionTypeNode([
-                                new Type\IdentifierTypeNode(Fixtures\Cases\Case1::class),
-                                new Type\IdentifierTypeNode(Fixtures\Cases\JumpingCaseInterface::class),
-                            ]),
-                        ),
-                    ]),
-                ),
-            ]),
-        ];
+		yield 'return cases grouped by string key' => [
+			'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnArrayOfGroupedCases']),
+			'expectedReturnType' => new Type\ArrayShapeNode([
+				new Type\ArrayShapeItemNode(
+					keyName: new ConstExprIntegerNode('1'),
+					optional: false,
+					valueType: new ConcreteGenericTypeNode(
+						type: new Type\IdentifierTypeNode('list'),
+						templateTypes: [
+							new Type\IdentifierTypeNode('$value'),
+						],
+						genericTypes: [
+							new Type\IdentifierTypeNode(Fixtures\Cases\Case1::class),
+						],
+						variances: [
+							'invariant',
+						],
+					),
+				),
+				new Type\ArrayShapeItemNode(
+					keyName: new ConstExprIntegerNode('2'),
+					optional: true,
+					valueType: new Type\ArrayTypeNode(
+						type: new Type\IdentifierTypeNode(Fixtures\Cases\Case2::class),
+					),
+				),
+			]),
+		];
 
-        yield 'return callable or string conditionally' => [
-            'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnCallableOrTextConditionally']),
-            'expectedReturnType' => new Type\ConditionalTypeForParameterNode(
-                parameterName: '$cond',
-                targetType: new Type\IdentifierTypeNode('true'),
-                if: new Type\IdentifierTypeNode('callable'),
-                else: new Type\ConstTypeNode(new ConstExprStringNode('text')),
-                negated: false,
-            ),
-        ];
+		yield 'return cases wrapped in object' => [
+			'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnCasesJumpingWrappedInObject']),
+			'expectedReturnType' => new Type\ObjectShapeNode([
+				new Type\ObjectShapeItemNode(
+					keyName: new ConstExprStringNode('jumpingCases'),
+					optional: false,
+					valueType: new Type\UnionTypeNode([
+						new Type\IdentifierTypeNode('null'),
+						new Type\ArrayTypeNode(
+							type: new Type\IntersectionTypeNode([
+								new Type\IdentifierTypeNode(Fixtures\Cases\Case1::class),
+								new Type\IdentifierTypeNode(Fixtures\Cases\JumpingCaseInterface::class),
+							]),
+						),
+					]),
+				),
+			]),
+		];
 
-        yield 'return random int from range' => [
-            'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnRandomInt']),
-            'expectedReturnType' => new ConcreteGenericTypeNode(
-                type: new Type\IdentifierTypeNode('int'),
-                templateTypes: [
-                    new Type\IdentifierTypeNode('$min'),
-                    new Type\IdentifierTypeNode('$max'),
-                ],
-                genericTypes: [
-                    new Type\ConstTypeNode(new ConstExprIntegerNode('0')),
-                    new Type\IdentifierTypeNode('max'),
-                ],
-                variances: [
-                    'invariant',
-                    'invariant',
-                ],
-            ),
-        ];
+		yield 'return callable or string conditionally' => [
+			'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnCallableOrTextConditionally']),
+			'expectedReturnType' => new Type\ConditionalTypeForParameterNode(
+				parameterName: '$cond',
+				targetType: new Type\IdentifierTypeNode('true'),
+				if: new Type\IdentifierTypeNode('callable'),
+				else: new Type\ConstTypeNode(new ConstExprStringNode('text')),
+				negated: false,
+			),
+		];
 
-        yield 'generic class creator' => [
-            'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'createClass']),
-            'expectedReturnType' => new ConcreteGenericTypeNode(
-                type: new Type\IdentifierTypeNode('new'),
-                templateTypes: [
-                    new Type\IdentifierTypeNode('$class'),
-                ],
-                genericTypes: [
-                    new TemplateTypeNode(
-                        name: 'T',
-                        bound: new Type\IdentifierTypeNode('object'),
-                    ),
-                ],
-                variances: [
-                    'invariant',
-                ],
-            ),
-        ];
+		yield 'return random int from range' => [
+			'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnRandomInt']),
+			'expectedReturnType' => new ConcreteGenericTypeNode(
+				type: new Type\IdentifierTypeNode('int'),
+				templateTypes: [
+					new Type\IdentifierTypeNode('$min'),
+					new Type\IdentifierTypeNode('$max'),
+				],
+				genericTypes: [
+					new Type\ConstTypeNode(new ConstExprIntegerNode('0')),
+					new Type\IdentifierTypeNode('max'),
+				],
+				variances: [
+					'invariant',
+					'invariant',
+				],
+			),
+		];
 
-        yield 'return offset of virtual type' => [
-            'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'translateColor']),
-            'expectedReturnType' => new Type\UnionTypeNode([
-                new Type\IdentifierTypeNode('null'),
-                new Type\OffsetAccessTypeNode(
-                    type: new TemplateTypeNode(
-                        name: 'TColorKey',
-                        bound: new ConcreteGenericTypeNode(
-                            type: new Type\IdentifierTypeNode('key-of'),
-                            templateTypes: [
-                                new Type\IdentifierTypeNode('TColors'),
-                            ],
-                            genericTypes: [
-                                $colorsTypeDef,
-                            ],
-                            variances: [
-                                'invariant',
-                            ],
-                        ),
-                    ),
-                    offset: $colorsTypeDef,
-                ),
-            ]),
-        ];
+		yield 'generic class creator' => [
+			'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'createClass']),
+			'expectedReturnType' => new ConcreteGenericTypeNode(
+				type: new Type\IdentifierTypeNode('new'),
+				templateTypes: [
+					new Type\IdentifierTypeNode('$class'),
+				],
+				genericTypes: [
+					new TemplateTypeNode(
+						name: 'T',
+						bound: new Type\IdentifierTypeNode('object'),
+					),
+				],
+				variances: [
+					'invariant',
+				],
+			),
+		];
 
-        yield 'return callable with typed args' => [
-            'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnCallableWithTypedArgs']),
-            'expectedReturnType' => new Type\CallableTypeNode(
-                identifier: new Type\IdentifierTypeNode('callable'),
-                parameters: [
-                    new Type\CallableTypeParameterNode(
-                        type: new Type\IdentifierTypeNode('int'),
-                        isReference: false,
-                        isVariadic: false,
-                        parameterName: '',
-                        isOptional: false,
-                    ),
-                    new Type\CallableTypeParameterNode(
-                        type: new Type\IdentifierTypeNode('bool'),
-                        isReference: false,
-                        isVariadic: false,
-                        parameterName: '$named',
-                        isOptional: false,
-                    ),
-                ],
-                returnType: new Type\IdentifierTypeNode('string'),
-                templateTypes: [],
-            ),
-        ];
+		yield 'return offset of virtual type' => [
+			'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'translateColor']),
+			'expectedReturnType' => new Type\UnionTypeNode([
+				new Type\IdentifierTypeNode('null'),
+				new Type\OffsetAccessTypeNode(
+					type: new TemplateTypeNode(
+						name: 'TColorKey',
+						bound: new ConcreteGenericTypeNode(
+							type: new Type\IdentifierTypeNode('key-of'),
+							templateTypes: [
+								new Type\IdentifierTypeNode('TColors'),
+							],
+							genericTypes: [
+								$colorsTypeDef,
+							],
+							variances: [
+								'invariant',
+							],
+						),
+					),
+					offset: $colorsTypeDef,
+				),
+			]),
+		];
 
-        yield 'return callable with templates' => [
-            'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnCallableWithTemplates']),
-            'expectedReturnType' => new Type\CallableTypeNode(
-                identifier: new Type\IdentifierTypeNode('callable'),
-                parameters: [],
-                returnType: new Type\IdentifierTypeNode('T'),
-                templateTypes: [
-                    new TemplateTagValueNode(
-                        name: 'T',
-                        bound: null,
-                        description: '',
-                        default: null,
-                    ),
-                ],
-            ),
-        ];
+		yield 'return callable with typed args' => [
+			'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnCallableWithTypedArgs']),
+			'expectedReturnType' => new Type\CallableTypeNode(
+				identifier: new Type\IdentifierTypeNode('callable'),
+				parameters: [
+					new Type\CallableTypeParameterNode(
+						type: new Type\IdentifierTypeNode('int'),
+						isReference: false,
+						isVariadic: false,
+						parameterName: '',
+						isOptional: false,
+					),
+					new Type\CallableTypeParameterNode(
+						type: new Type\IdentifierTypeNode('bool'),
+						isReference: false,
+						isVariadic: false,
+						parameterName: '$named',
+						isOptional: false,
+					),
+				],
+				returnType: new Type\IdentifierTypeNode('string'),
+				templateTypes: [],
+			),
+		];
 
-        yield 'return a class constant' => [
-            'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnOneClassConstant']),
-            'expectedReturnType' => new Type\UnionTypeNode([
-                new Type\ConstTypeNode(
-                    constExpr: new ConstFetchNode(
-                        className: Fixtures\TypeResolverTestFixture::class,
-                        name: 'TYPE_A',
-                    ),
-                ),
-                new Type\ConstTypeNode(
-                    constExpr: new ConstFetchNode(
-                        className: Fixtures\TypeResolverTestFixture::class,
-                        name: 'TYPE_B',
-                    ),
-                ),
-            ]),
-        ];
+		yield 'return callable with templates' => [
+			'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnCallableWithTemplates']),
+			'expectedReturnType' => new Type\CallableTypeNode(
+				identifier: new Type\IdentifierTypeNode('callable'),
+				parameters: [],
+				returnType: new Type\IdentifierTypeNode('T'),
+				templateTypes: [
+					new TemplateTagValueNode(
+						name: 'T',
+						bound: null,
+						description: '',
+						default: null,
+					),
+				],
+			),
+		];
 
-        yield 'return all class constants' => [
-            'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnAllClassConstants']),
-            'expectedReturnType' => new ConcreteGenericTypeNode(
-                type: new Type\IdentifierTypeNode('list'),
-                templateTypes: [
-                    new Type\IdentifierTypeNode('$value'),
-                ],
-                genericTypes: [
-                    new Type\ConstTypeNode(
-                        constExpr: new ConstFetchNode(
-                            className: Fixtures\TypeResolverTestFixture::class,
-                            name: 'TYPE_*',
-                        ),
-                    ),
-                ],
-                variances: [
-                    'invariant',
-                ],
-            ),
-        ];
+		yield 'return a class constant' => [
+			'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnOneClassConstant']),
+			'expectedReturnType' => new Type\UnionTypeNode([
+				new Type\ConstTypeNode(
+					constExpr: new ConstFetchNode(
+						className: Fixtures\TypeResolverTestFixture::class,
+						name: 'TYPE_A',
+					),
+				),
+				new Type\ConstTypeNode(
+					constExpr: new ConstFetchNode(
+						className: Fixtures\TypeResolverTestFixture::class,
+						name: 'TYPE_B',
+					),
+				),
+			]),
+		];
 
-        yield 'return parent class' => [
-            'reflector' => self::reflectMethod([Fixtures\TypeResolverChildTestFixture::class, 'returnParent']),
-            'expectedReturnType' => new Type\IdentifierTypeNode(Fixtures\TypeResolverTestFixture::class),
-        ];
+		yield 'return all class constants' => [
+			'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnAllClassConstants']),
+			'expectedReturnType' => new ConcreteGenericTypeNode(
+				type: new Type\IdentifierTypeNode('list'),
+				templateTypes: [
+					new Type\IdentifierTypeNode('$value'),
+				],
+				genericTypes: [
+					new Type\ConstTypeNode(
+						constExpr: new ConstFetchNode(
+							className: Fixtures\TypeResolverTestFixture::class,
+							name: 'TYPE_*',
+						),
+					),
+				],
+				variances: [
+					'invariant',
+				],
+			),
+		];
 
-        yield 'return Payload<Number>' => [
-            'reflector' => self::reflectMethod([Fixtures\Payload::class, 'makeNumberPayload']),
-            'expectedReturnType' => new ConcreteGenericTypeNode(
-                type: new Type\IdentifierTypeNode(Fixtures\Payload::class),
-                templateTypes: [
-                    new TemplateTypeNode(
-                        name: 'T',
-                        bound: null,
-                    ),
-                ],
-                genericTypes: [
-                    new Type\IdentifierTypeNode(Fixtures\Number::class),
-                ],
-                variances: [
-                    'invariant',
-                ],
-            ),
-        ];
+		yield 'return parent class' => [
+			'reflector' => self::reflectMethod([Fixtures\TypeResolverChildTestFixture::class, 'returnParent']),
+			'expectedReturnType' => new Type\IdentifierTypeNode(Fixtures\TypeResolverTestFixture::class),
+		];
 
-        yield 'return Payload<Payload<T>>' => [
-            'reflector' => self::reflectMethod([Fixtures\Payload::class, 'makePayloadPayload']),
-            'expectedReturnType' => new TemplateGenericTypeNode(
-                type: new Type\IdentifierTypeNode(Fixtures\Payload::class),
-                templateTypes: [
-                    new TemplateTypeNode(
-                        name: 'T',
-                        bound: null,
-                    ),
-                ],
-                genericTypes: [
-                    new TemplateGenericTypeNode(
-                        type: new Type\IdentifierTypeNode(Fixtures\Payload::class),
-                        templateTypes: [
-                            new TemplateTypeNode(
-                                name: 'T',
-                                bound: null,
-                            ),
-                        ],
-                        genericTypes: [
-                            new TemplateTypeNode(
-                                name: 'T',
-                                bound: null,
-                            ),
-                        ],
-                        variances: [
-                            'invariant',
-                        ],
-                    ),
-                ],
-                variances: [
-                    'invariant',
-                ],
-            ),
-        ];
+		yield 'return Payload<Number>' => [
+			'reflector' => self::reflectMethod([Fixtures\Payload::class, 'makeNumberPayload']),
+			'expectedReturnType' => new ConcreteGenericTypeNode(
+				type: new Type\IdentifierTypeNode(Fixtures\Payload::class),
+				templateTypes: [
+					new TemplateTypeNode(
+						name: 'T',
+						bound: null,
+					),
+				],
+				genericTypes: [
+					new Type\IdentifierTypeNode(Fixtures\PHP81\Number::class),
+				],
+				variances: [
+					'invariant',
+				],
+			),
+			'minPhpVersion' => '8.1',
+		];
 
-        yield 'return Pair<int, string>' => [
-            'reflector' => self::reflectMethod([Fixtures\Pair::class, 'makeArrayString']),
-            'expectedReturnType' => new ConcreteGenericTypeNode(
-                type: new Type\IdentifierTypeNode(Fixtures\Pair::class),
-                templateTypes: [
-                    new TemplateTypeNode(
-                        name: 'TLeft',
-                        bound: new Type\IdentifierTypeNode('mixed'),
-                    ),
-                    new TemplateTypeNode(
-                        name: 'TRight',
-                        bound: new Type\IdentifierTypeNode('mixed'),
-                    ),
-                ],
-                genericTypes: [
-                    new Type\IdentifierTypeNode('int'),
-                    new Type\IdentifierTypeNode('string'),
-                ],
-                variances: [
-                    'invariant',
-                    'invariant',
-                ],
-            ),
-        ];
+		yield 'return Payload<Payload<T>>' => [
+			'reflector' => self::reflectMethod([Fixtures\Payload::class, 'makePayloadPayload']),
+			'expectedReturnType' => new TemplateGenericTypeNode(
+				type: new Type\IdentifierTypeNode(Fixtures\Payload::class),
+				templateTypes: [
+					new TemplateTypeNode(
+						name: 'T',
+						bound: null,
+					),
+				],
+				genericTypes: [
+					new TemplateGenericTypeNode(
+						type: new Type\IdentifierTypeNode(Fixtures\Payload::class),
+						templateTypes: [
+							new TemplateTypeNode(
+								name: 'T',
+								bound: null,
+							),
+						],
+						genericTypes: [
+							new TemplateTypeNode(
+								name: 'T',
+								bound: null,
+							),
+						],
+						variances: [
+							'invariant',
+						],
+					),
+				],
+				variances: [
+					'invariant',
+				],
+			),
+		];
 
-        yield 'return Pair<int, T of mixed>' => [
-            'reflector' => self::reflectMethod([Fixtures\Pair::class, 'makeArrayValue']),
-            'expectedReturnType' => new ConcreteGenericTypeNode(
-                type: new Type\IdentifierTypeNode(Fixtures\Pair::class),
-                templateTypes: [
-                    new TemplateTypeNode(
-                        name: 'TLeft',
-                        bound: new Type\IdentifierTypeNode('mixed'),
-                    ),
-                    new TemplateTypeNode(
-                        name: 'TRight',
-                        bound: new Type\IdentifierTypeNode('mixed'),
-                    ),
-                ],
-                genericTypes: [
-                    new Type\IdentifierTypeNode('int'),
-                    new TemplateTypeNode(
-                        name: 'TValue',
-                        bound: new Type\IdentifierTypeNode('mixed'),
-                    ),
-                ],
-                variances: [
-                    'invariant',
-                    'invariant',
-                ],
-            ),
-        ];
+		yield 'return Pair<int, string>' => [
+			'reflector' => self::reflectMethod([Fixtures\Pair::class, 'makeArrayString']),
+			'expectedReturnType' => new ConcreteGenericTypeNode(
+				type: new Type\IdentifierTypeNode(Fixtures\Pair::class),
+				templateTypes: [
+					new TemplateTypeNode(
+						name: 'TLeft',
+						bound: new Type\IdentifierTypeNode('mixed'),
+					),
+					new TemplateTypeNode(
+						name: 'TRight',
+						bound: new Type\IdentifierTypeNode('mixed'),
+					),
+				],
+				genericTypes: [
+					new Type\IdentifierTypeNode('int'),
+					new Type\IdentifierTypeNode('string'),
+				],
+				variances: [
+					'invariant',
+					'invariant',
+				],
+			),
+		];
 
-        yield 'return Pair<T, T>' => [
-            'reflector' => self::reflectMethod([Fixtures\Pair::class, 'makeTwins']),
-            'expectedReturnType' => new ConcreteGenericTypeNode(
-                type: new Type\IdentifierTypeNode(Fixtures\Pair::class),
-                templateTypes: [
-                    new TemplateTypeNode(
-                        name: 'TLeft',
-                        bound: new Type\IdentifierTypeNode('mixed'),
-                    ),
-                    new TemplateTypeNode(
-                        name: 'TRight',
-                        bound: new Type\IdentifierTypeNode('mixed'),
-                    ),
-                ],
-                genericTypes: [
-                    new TemplateTypeNode(
-                        name: 'TTwinType',
-                        bound: new Type\IdentifierTypeNode('mixed'),
-                    ),
-                    new TemplateTypeNode(
-                        name: 'TTwinType',
-                        bound: new Type\IdentifierTypeNode('mixed'),
-                    ),
-                ],
-                variances: [
-                    'invariant',
-                    'invariant',
-                ],
-            ),
-        ];
+		yield 'return Pair<int, T of mixed>' => [
+			'reflector' => self::reflectMethod([Fixtures\Pair::class, 'makeArrayValue']),
+			'expectedReturnType' => new ConcreteGenericTypeNode(
+				type: new Type\IdentifierTypeNode(Fixtures\Pair::class),
+				templateTypes: [
+					new TemplateTypeNode(
+						name: 'TLeft',
+						bound: new Type\IdentifierTypeNode('mixed'),
+					),
+					new TemplateTypeNode(
+						name: 'TRight',
+						bound: new Type\IdentifierTypeNode('mixed'),
+					),
+				],
+				genericTypes: [
+					new Type\IdentifierTypeNode('int'),
+					new TemplateTypeNode(
+						name: 'TValue',
+						bound: new Type\IdentifierTypeNode('mixed'),
+					),
+				],
+				variances: [
+					'invariant',
+					'invariant',
+				],
+			),
+		];
 
-        yield 'return T' => [
-            'reflector' => self::reflectMethod([Fixtures\TypeResolverChildTestFixture::class, 'getSimilarItems']),
-            'expectedReturnType' => new TemplateGenericTypeNode(
-                type: new Type\IdentifierTypeNode('list'),
-                templateTypes: [
-                    new Type\IdentifierTypeNode('$value'),
-                ],
-                genericTypes: [
-                    new TemplateTypeNode(
-                        name: 'TItem',
-                        bound: null,
-                    ),
-                ],
-                variances: [
-                    'invariant',
-                ],
-            ),
-        ];
-    }
+		yield 'return Pair<T, T>' => [
+			'reflector' => self::reflectMethod([Fixtures\Pair::class, 'makeTwins']),
+			'expectedReturnType' => new ConcreteGenericTypeNode(
+				type: new Type\IdentifierTypeNode(Fixtures\Pair::class),
+				templateTypes: [
+					new TemplateTypeNode(
+						name: 'TLeft',
+						bound: new Type\IdentifierTypeNode('mixed'),
+					),
+					new TemplateTypeNode(
+						name: 'TRight',
+						bound: new Type\IdentifierTypeNode('mixed'),
+					),
+				],
+				genericTypes: [
+					new TemplateTypeNode(
+						name: 'TTwinType',
+						bound: new Type\IdentifierTypeNode('mixed'),
+					),
+					new TemplateTypeNode(
+						name: 'TTwinType',
+						bound: new Type\IdentifierTypeNode('mixed'),
+					),
+				],
+				variances: [
+					'invariant',
+					'invariant',
+				],
+			),
+		];
 
-    public function testThatRelativeTypeWithoutClassScopeIsNotAllowed(): void
-    {
-        $docBlock = Factory::createInstance()
-            ->createFromComment(
-                <<<'PHP'
-                /**
-                 * @return $this
-                 */
-                PHP,
-            );
+		yield 'return T' => [
+			'reflector' => self::reflectMethod([Fixtures\TypeResolverChildTestFixture::class, 'getSimilarItems']),
+			'expectedReturnType' => new TemplateGenericTypeNode(
+				type: new Type\IdentifierTypeNode('list'),
+				templateTypes: [
+					new Type\IdentifierTypeNode('$value'),
+				],
+				genericTypes: [
+					new TemplateTypeNode(
+						name: 'TItem',
+						bound: null,
+					),
+				],
+				variances: [
+					'invariant',
+				],
+			),
+		];
+	}
 
-        $this->expectException(LogicException::class);
-        $this->expectExceptionMessage('Cannot resolve `$this`, no class was defined in the current scope');
+	public function testThatRelativeTypeWithoutClassScopeIsNotAllowed(): void
+	{
+		$docBlock = Factory::createInstance()
+			->createFromComment(
+				<<<'PHP'
+				/**
+				 * @return $this
+				 */
+				PHP,
+			);
 
-        $docBlock->getTag('@return');
-    }
+		$this->expectException(LogicException::class);
+		$this->expectExceptionMessage('Cannot resolve `$this`, no class was defined in the current scope');
 
-    public function testThatInvalidTypeIsIgnored(): void
-    {
-        $scope = new Scope(null, null, null, '', new Resolver());
-        $typeResolver = new TypeResolver();
-        $invalidType = new Type\InvalidTypeNode(new ParserException('', 0, 0, 0));
+		$docBlock->getTag('@return');
+	}
 
-        $processedType = $typeResolver->resolve($scope, $invalidType);
+	public function testThatInvalidTypeIsIgnored(): void
+	{
+		$scope = new Scope(null, null, null, '', new Resolver());
+		$typeResolver = new TypeResolver();
+		$invalidType = new Type\InvalidTypeNode(new ParserException('', 0, 0, 0));
 
-        $this->assertSame($invalidType, $processedType);
-    }
+		$processedType = $typeResolver->resolve($scope, $invalidType);
 
-    public function testThatUnsupportedTypesTriggerException(): void
-    {
-        $scope = new Scope(null, null, null, '', new Resolver());
-        $typeResolver = new TypeResolver();
-        $unsupportedType = $this->createMock(Type\TypeNode::class);
+		$this->assertSame($invalidType, $processedType);
+	}
 
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Cannot resolve related types, type is unsupported: ' . get_class($unsupportedType));
+	public function testThatUnsupportedTypesTriggerException(): void
+	{
+		$scope = new Scope(null, null, null, '', new Resolver());
+		$typeResolver = new TypeResolver();
+		$unsupportedType = $this->createMock(Type\TypeNode::class);
 
-        $typeResolver->resolve($scope, $unsupportedType);
-    }
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessage('Cannot resolve related types, type is unsupported: ' . get_class($unsupportedType));
 
-    public function testThatParentlessClassCannotResolveParent(): void
-    {
-        $docBlock = Factory::createInstance()
-            ->createFromComment(
-                <<<'PHP'
-                /**
-                 * @return parent
-                 */
-                PHP,
-                class: Fixtures\TypeResolverTestFixture::class,
-            );
+		$typeResolver->resolve($scope, $unsupportedType);
+	}
 
-        $this->expectException(LogicException::class);
-        $this->expectExceptionMessage('Class/type `' . Fixtures\TypeResolverTestFixture::class . '` doesn\'t have a parent');
+	public function testThatParentlessClassCannotResolveParent(): void
+	{
+		$docBlock = Factory::createInstance()
+			->createFromComment(
+				<<<'PHP'
+				/**
+				 * @return parent
+				 */
+				PHP,
+				class: Fixtures\TypeResolverTestFixture::class,
+			);
 
-        $docBlock->getTag('@return');
-    }
+		$this->expectException(LogicException::class);
+		$this->expectExceptionMessage('Class/type `' . Fixtures\TypeResolverTestFixture::class . '` doesn\'t have a parent');
 
-    public function testThatLocalTypeDefRequiresClass(): void
-    {
-        $docBlock = Factory::createInstance()
-            ->createFromComment(
-                <<<'PHP'
-                /**
-                 * @phpstan-type TExample string
-                 * @return TExample
-                 */
-                PHP,
-            );
+		$docBlock->getTag('@return');
+	}
 
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('PHPStan local type requires a class');
+	public function testThatLocalTypeDefRequiresClass(): void
+	{
+		$docBlock = Factory::createInstance()
+			->createFromComment(
+				<<<'PHP'
+				/**
+				 * @phpstan-type TExample string
+				 * @return TExample
+				 */
+				PHP,
+			);
 
-        $docBlock->getTag('@return');
-    }
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessage('PHPStan local type requires a class');
+
+		$docBlock->getTag('@return');
+	}
 }

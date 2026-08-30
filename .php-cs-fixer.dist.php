@@ -2,6 +2,7 @@
 
 return (new PhpCsFixer\Config())
     ->setRiskyAllowed(true)
+	->setIndent("\t")
     ->setParallelConfig(PhpCsFixer\Runner\Parallel\ParallelConfigFactory::detect())
     ->setRules([
         '@PER-CS2.0' => true,

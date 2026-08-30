@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace uuf6429\PHPStanPHPDocTypeResolver\PhpImports;
 
 /**
@@ -10,13 +12,17 @@ namespace uuf6429\PHPStanPHPDocTypeResolver\PhpImports;
  */
 class Block
 {
-    /**
-     * @param array<string, string> $imports
-     */
-    public function __construct(
-        public readonly int $startLine,
-        public readonly int $endLine,
-        public readonly string $namespace,
-        public readonly array $imports,
-    ) {}
+	/**
+	 * @param array<string, string> $imports
+	 */
+	public function __construct(
+		/** @readonly */
+		public int $startLine,
+		/** @readonly */
+		public int $endLine,
+		/** @readonly */
+		public string $namespace,
+		/** @readonly */
+		public array $imports,
+	) {}
 }

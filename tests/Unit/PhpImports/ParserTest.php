@@ -77,6 +77,21 @@ final class ParserTest extends TestCase
 			],
 		];
 
+		yield 'import in multiple namespaces' => [
+			'sourceCode' => <<<'PHP'
+				namespace XX {
+					use XXX;
+				}
+				namespace YY {
+					use YYY;
+				}
+				PHP,
+			'expectedResult' => [
+				'namespace' => 'XX',
+				'imports' => ['xxx' => 'XXX'],
+			],
+		];
+
 		yield 'import group' => [
 			'sourceCode' => <<<'PHP'
 				use XX\{YY, ZZ};

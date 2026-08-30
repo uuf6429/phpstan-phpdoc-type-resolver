@@ -60,6 +60,7 @@ final class Parser
 					}
 
 					$namespace = $this->parseNamespace();
+					$imports = [];
 					break;
 			}
 
@@ -157,7 +158,7 @@ final class Parser
 	{
 		$namespace = '';
 		while (($token = $this->next()) !== null) {
-			if ($token->text === ';') {
+			if ($token->text === ';' || $token->text === '{') {
 				return $namespace;
 			}
 

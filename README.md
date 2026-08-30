@@ -71,8 +71,8 @@ $reflector = new \ReflectionMethod(\uuf6429\PHPStanPHPDocTypeResolverTests\Fixtu
 
 // Use the scope resolver to get information about that method
 $phpDocResolverFactory = new \uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Factory();
-$genericsResolverFactory = new \uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Factory($phpDocResolverFactory);
-$scopeResolver = new \uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\ReflectorScopeResolver($genericsResolverFactory);
+$genericsExtractor = new \uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Extractor($phpDocResolverFactory);
+$scopeResolver = new \uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\ReflectorScopeResolver($genericsExtractor);
 $scope = $scopeResolver->resolve($reflector);
 
 // Parse the PHPDoc block with PHPStan PHPDoc parser

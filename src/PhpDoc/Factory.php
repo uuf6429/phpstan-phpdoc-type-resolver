@@ -6,7 +6,7 @@ namespace uuf6429\PHPStanPHPDocTypeResolver\PhpDoc;
 
 use PHPStan\PhpDocParser;
 use Reflector;
-use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Factory as GenericsResolverFactory;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Extractor as GenericsExtractor;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Resolver as GenericsResolver;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpImports;
 use uuf6429\PHPStanPHPDocTypeResolver\TypeResolver;
@@ -25,7 +25,7 @@ class Factory
 	/** @readonly */
 	private PhpImports\Resolver $phpImportsResolver;
 	/** @readonly */
-	private GenericsResolverFactory $genericsResolverFactory;
+	private GenericsExtractor $genericsExtractor;
 
 	public static function createInstance(): self
 	{
@@ -33,7 +33,7 @@ class Factory
 	}
 
 	public function __construct(
-		?GenericsResolverFactory $genericTypesExporter = null,
+		?GenericsExtractor $genericsExtractor = null,
 		?ReflectorScopeResolver $scopeResolver = null,
 		?PhpDocParser\Lexer\Lexer $phpDocParserLexer = null,
 		?PhpDocParser\Parser\ConstExprParser $phpDocConstExprParser = null,
@@ -41,8 +41,8 @@ class Factory
 		?PhpDocParser\Parser\PhpDocParser $phpDocParser = null,
 		?PhpImports\Resolver $phpImportsResolver = null,
 	) {
-		$this->genericsResolverFactory = $genericTypesExporter ?? new GenericsResolverFactory($this);
-		$this->scopeResolver = $scopeResolver ?? new ReflectorScopeResolver($this->genericsResolverFactory);
+		$this->genericsExtractor = $genericsExtractor ?? new GenericsExtractor($this);
+		$this->scopeResolver = $scopeResolver ?? new ReflectorScopeResolver($this->genericsExtractor);
 		$this->lexer = $phpDocParserLexer ?? new PhpDocParser\Lexer\Lexer();
 		$constExprParser = $phpDocConstExprParser ?? new PhpDocParser\Parser\ConstExprParser();
 		$typeParser = $phpDocTypeParser ?? new PhpDocParser\Parser\TypeParser($constExprParser);
@@ -90,8 +90,8 @@ class Factory
 					),
 				),
 			),
-			typeResolver: $typeResolver = new TypeResolver($this->genericsResolverFactory, $this->phpImportsResolver),
-			genericTypesExtractor: $this->genericsResolverFactory->withResolvers($typeResolver, $scope->genericsResolver),
+			typeResolver: new TypeResolver($this->genericsExtractor, $this->phpImportsResolver),
+			genericsExtractor: $this->genericsExtractor,
 		);
 	}
 }

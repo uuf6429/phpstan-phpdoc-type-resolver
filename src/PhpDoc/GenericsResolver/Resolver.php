@@ -58,6 +58,9 @@ class Resolver
 	/**
 	 * Maps a template type to a concrete type, if possible.
 	 * Otherwise, returns the original template type if it's a known template type, or null if it isn't.
+	 *
+	 * Note: as a side effect, this records whether a template type stayed unresolved (i.e. was mapped to itself),
+	 * which can then be queried via {@see self::hasUnresolvedTemplateType()}.
 	 */
 	public function map(string $template): null|TypeNode
 	{
@@ -74,9 +77,10 @@ class Resolver
 	}
 
 	/**
-	 * Returns true if at any point, a template type was mapped to itself.
+	 * Returns true if, at any point, a template type stayed unresolved (i.e. was mapped to itself instead of a
+	 * concrete type).
 	 */
-	public function hasMappedTemplateType(): bool
+	public function hasUnresolvedTemplateType(): bool
 	{
 		return !$this->state->isConcrete();
 	}

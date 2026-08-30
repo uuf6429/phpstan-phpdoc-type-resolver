@@ -68,16 +68,22 @@ final class ReflectorScopeResolverTest extends TestCase
 			$this->expectExceptionMessage($expectedException->getMessage());
 		}
 
-		$actualResult = $resolver->resolve($reflector)->toArray();
-		if ($actualResult['file'] !== null) {
-			$actualResult['file'] = str_replace(DIRECTORY_SEPARATOR, '/', $actualResult['file']);
-		}
-		$expectedResult = $expectedResult?->toArray();
-		if ($expectedResult !== null && $expectedResult['file'] !== null) {
-			$expectedResult['file'] = str_replace(DIRECTORY_SEPARATOR, '/', $expectedResult['file']);
-		}
+		$actualResult = $resolver->resolve($reflector);
 
-		$this->assertEquals($expectedResult, $actualResult);
+		$this->assertEquals(
+			$expectedResult === null ? null : [
+				'file' => $expectedResult->file,
+				'line' => $expectedResult->line,
+				'class' => $expectedResult->class,
+				'comment' => $expectedResult->comment,
+			],
+			[
+				'file' => $actualResult->file,
+				'line' => $actualResult->line,
+				'class' => $actualResult->class,
+				'comment' => $actualResult->comment,
+			],
+		);
 	}
 
 	/**
@@ -141,7 +147,7 @@ final class ReflectorScopeResolverTest extends TestCase
 
 		yield 'ReflectionProperty' => [
 			'expectedResult' => new Scope(
-				file: dirname(__DIR__) . '/Fixtures/ObjectTestFixture.php',
+				file: dirname(__DIR__) . DIRECTORY_SEPARATOR . 'Fixtures' . DIRECTORY_SEPARATOR . 'ObjectTestFixture.php',
 				line: 12,
 				class: ObjectTestFixture::class,
 				comment: <<<'PHP'
@@ -171,7 +177,7 @@ final class ReflectorScopeResolverTest extends TestCase
 
 		yield 'ReflectionClass' => [
 			'expectedResult' => new Scope(
-				file: dirname(__DIR__) . '/Fixtures/ObjectTestFixture.php',
+				file: dirname(__DIR__) . DIRECTORY_SEPARATOR . 'Fixtures' . DIRECTORY_SEPARATOR . 'ObjectTestFixture.php',
 				line: 12,
 				class: ObjectTestFixture::class,
 				comment: <<<'PHP'
@@ -189,7 +195,7 @@ final class ReflectorScopeResolverTest extends TestCase
 
 		yield 'ReflectionObject' => [
 			'expectedResult' => new Scope(
-				file: dirname(__DIR__) . '/Fixtures/ObjectTestFixture.php',
+				file: dirname(__DIR__) . DIRECTORY_SEPARATOR . 'Fixtures' . DIRECTORY_SEPARATOR . 'ObjectTestFixture.php',
 				line: 12,
 				class: ObjectTestFixture::class,
 				comment: <<<'PHP'
@@ -207,7 +213,7 @@ final class ReflectorScopeResolverTest extends TestCase
 
 		yield 'ReflectionEnum' => [
 			'expectedResult' => new Scope(
-				file: dirname(__DIR__) . '/Fixtures/IntegerEnum.php',
+				file: dirname(__DIR__) . DIRECTORY_SEPARATOR . 'Fixtures' . DIRECTORY_SEPARATOR . 'IntegerEnum.php',
 				line: 5,
 				class: IntegerEnum::class,
 				comment: '',
@@ -220,7 +226,7 @@ final class ReflectorScopeResolverTest extends TestCase
 
 		yield 'ReflectionEnumUnitCase' => [
 			'expectedResult' => new Scope(
-				file: dirname(__DIR__) . '/Fixtures/PlainEnum.php',
+				file: dirname(__DIR__) . DIRECTORY_SEPARATOR . 'Fixtures' . DIRECTORY_SEPARATOR . 'PlainEnum.php',
 				line: 5,
 				class: PlainEnum::class,
 				comment: '',
@@ -238,7 +244,7 @@ final class ReflectorScopeResolverTest extends TestCase
 
 		yield 'ReflectionEnumBackedCase' => [
 			'expectedResult' => new Scope(
-				file: dirname(__DIR__) . '/Fixtures/StringEnum.php',
+				file: dirname(__DIR__) . DIRECTORY_SEPARATOR . 'Fixtures' . DIRECTORY_SEPARATOR . 'StringEnum.php',
 				line: 5,
 				class: StringEnum::class,
 				comment: '',
@@ -269,7 +275,7 @@ final class ReflectorScopeResolverTest extends TestCase
 		*/
 		yield 'ReflectionClassConstant' => [
 			'expectedResult' => new Scope(
-				file: dirname(__DIR__) . '/Fixtures/ObjectTestFixture.php',
+				file: dirname(__DIR__) . DIRECTORY_SEPARATOR . 'Fixtures' . DIRECTORY_SEPARATOR . 'ObjectTestFixture.php',
 				line: 12,
 				class: ObjectTestFixture::class,
 				comment: '',
@@ -287,7 +293,7 @@ final class ReflectorScopeResolverTest extends TestCase
 
 		yield 'ReflectionMethod' => [
 			'expectedResult' => new Scope(
-				file: dirname(__DIR__) . '/Fixtures/ObjectTestFixture.php',
+				file: dirname(__DIR__) . DIRECTORY_SEPARATOR . 'Fixtures' . DIRECTORY_SEPARATOR . 'ObjectTestFixture.php',
 				line: 37,
 				class: ObjectTestFixture::class,
 				comment: <<<'PHP'
@@ -314,7 +320,7 @@ final class ReflectorScopeResolverTest extends TestCase
 
 		yield 'ReflectionFunction' => [
 			'expectedResult' => new Scope(
-				file: dirname(__DIR__) . '/Fixtures/functions.php',
+				file: dirname(__DIR__) . DIRECTORY_SEPARATOR . 'Fixtures' . DIRECTORY_SEPARATOR . 'functions.php',
 				line: 47,
 				class: null,
 				comment: <<<'PHP'

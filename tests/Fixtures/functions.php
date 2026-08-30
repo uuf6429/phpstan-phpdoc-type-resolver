@@ -10,7 +10,7 @@ use SplFileInfo;
  */
 function typeResolverTestFunctionReturningStringFixture(): string
 {
-    return 'hoi';
+	return 'hoi';
 }
 
 /**
@@ -18,27 +18,27 @@ function typeResolverTestFunctionReturningStringFixture(): string
  */
 function typeResolverTestFunctionReturningImportedClass(): SplFileInfo
 {
-    return new SplFileInfo(__FILE__);
+	return new SplFileInfo(__FILE__);
 }
 
 function getTypeResolverTestClosureReturningString(): Closure
 {
-    /**
-     * @return string
-     */
-    return static function (): string {
-        return 'hoi';
-    };
+	/**
+	 * @return string
+	 */
+	return static function (): string {
+		return 'hoi';
+	};
 }
 
 function getTypeResolverTestClosureReturningImportedType(): Closure
 {
-    /**
-     * @return SplFileInfo
-     */
-    return static function (): SplFileInfo {
-        return new SplFileInfo(__FILE__);
-    };
+	/**
+	 * @return SplFileInfo
+	 */
+	return static function (): SplFileInfo {
+		return new SplFileInfo(__FILE__);
+	};
 }
 
 /**
@@ -46,7 +46,7 @@ function getTypeResolverTestClosureReturningImportedType(): Closure
  */
 function functionWithParameter(string $greeting): void
 {
-    echo $greeting;
+	echo $greeting;
 }
 
 /**
@@ -54,5 +54,5 @@ function functionWithParameter(string $greeting): void
  */
 function getFunctionWithParameter(): string
 {
-    return __NAMESPACE__ . '\\functionWithParameter';
+	return __NAMESPACE__ . '\\functionWithParameter';
 }

@@ -11,31 +11,31 @@ use Stringable;
  */
 class ObjectTestFixture
 {
-    public const TEST = 123;
+	public const TEST = 123;
 
-    /**
-     * @var 'hello'|'bye'
-     */
-    public readonly string $realProperty;
+	/**
+	 * @var 'hello'|'bye'
+	 */
+	public string $realProperty;
 
-    /**
-     * @param 'hello'|'bye' $greeting
-     */
-    public function __construct(string $greeting)
-    {
-        $this->realProperty = $greeting;
-    }
+	/**
+	 * @param 'hello'|'bye' $greeting
+	 */
+	public function __construct(string $greeting)
+	{
+		$this->realProperty = $greeting;
+	}
 
-    /**
-     * Greeter
-     *
-     * A function that greets the entity given their name with the desired greeting.
-     * For example, one could greet the world with `(new ObjectTestFixture('Hello'))->greet('World')`.
-     *
-     * @param string|Stringable $name
-     */
-    public function greet(string|Stringable $name): void
-    {
-        echo "$this->realProperty $name";
-    }
+	/**
+	 * Greeter
+	 *
+	 * A function that greets the entity given their name with the desired greeting.
+	 * For example, one could greet the world with `(new ObjectTestFixture('Hello'))->greet('World')`.
+	 *
+	 * @param string|Stringable $name
+	 */
+	public function greet(string|Stringable $name): void
+	{
+		echo "$this->realProperty $name";
+	}
 }

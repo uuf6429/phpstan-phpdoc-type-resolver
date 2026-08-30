@@ -6,7 +6,7 @@ namespace PHPStan\PhpDocParser\Ast\PhpDoc;
 
 interface PhpDocTagValueNode
 {
-    //
+	//
 }
 
 /**
@@ -14,13 +14,13 @@ interface PhpDocTagValueNode
  */
 abstract class PhpDocTagNode
 {
-    /**
-     * @var TValue
-     */
-    public PhpDocTagValueNode $value;
+	/**
+	 * @var TValue
+	 */
+	public PhpDocTagValueNode $value;
 
-    /**
-     * @param TValue $value
-     */
-    abstract public function __construct(string $name, PhpDocTagValueNode $value);
+	/**
+	 * @param TValue $value
+	 */
+	abstract public function __construct(string $name, PhpDocTagValueNode $value);
 }

@@ -2,9 +2,8 @@
 
 declare(strict_types=1);
 
-namespace uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver;
+namespace uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Generics;
 
-use InvalidArgumentException;
 use PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocNode;
 use PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocTagNode;
 use PHPStan\PhpDocParser\Ast\PhpDoc\TemplateTagValueNode;
@@ -12,12 +11,6 @@ use PHPStan\PhpDocParser\Ast\PhpDoc\TypeAliasImportTagValueNode;
 use PHPStan\PhpDocParser\Ast\PhpDoc\TypeAliasTagValueNode;
 use PHPStan\PhpDocParser\Ast\Type\IdentifierTypeNode;
 use PHPStan\PhpDocParser\Ast\Type\TypeNode;
-use ReflectionClass;
-use ReflectionException;
-use ReflectionFunction;
-use ReflectionMethod;
-use Reflector;
-use RuntimeException;
 use uuf6429\PHPStanPHPDocTypeResolver\IsClassLike;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Factory as PhpDocFactory;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Scope;
@@ -27,40 +20,38 @@ use uuf6429\PHPStanPHPDocTypeResolver\TypeResolver;
 
 /**
  * Extracts the generic/template, locally-defined and imported types declared by a PHPDoc block (or a reflected
- * class-like structure) into a {@see Resolver}.
+ * class-like structure) into a {@see GenericTypeMap}.
  */
 class Extractor
 {
 	use IsClassLike;
 
 	/**
-	 * @var array<string, Resolver>
+	 * @var array<string, GenericTypeMap>
 	 */
 	private array $cache = [];
 
 	public function __construct(
 		/** @readonly */
 		private PhpDocFactory $factory,
-	) {
-		//
-	}
+	) {}
 
 	/**
-	 * @throws ReflectionException
+	 * @throws \ReflectionException
 	 */
-	public function extractFromClassName(string $className): Resolver
+	public function extractFromClassName(string $className): GenericTypeMap
 	{
 		if (!$this->isClassLike($className)) {
-			throw new InvalidArgumentException("Class, interface, trait or enum does not exist: $className");
+			throw new \InvalidArgumentException("Class, interface, trait or enum does not exist: {$className}");
 		}
 
-		return $this->extractFromReflector(new ReflectionClass($className));
+		return $this->extractFromReflector(new \ReflectionClass($className));
 	}
 
 	/**
-	 * @throws ReflectionException
+	 * @throws \ReflectionException
 	 */
-	public function extractFromReflector(Reflector $reflector): Resolver
+	public function extractFromReflector(\Reflector $reflector): GenericTypeMap
 	{
 		return ($cacheKey = $this->makeCacheKey($reflector)) !== null
 			? ($this->cache[$cacheKey] ?? ($this->cache[$cacheKey] = $this->factory->createFromReflector($reflector)->getGenericsResolver()))
@@ -69,43 +60,40 @@ class Extractor
 
 	/**
 	 * @param null|class-string $currentClass
-	 * @throws ReflectionException
+	 *
+	 * @throws \ReflectionException
 	 */
 	public function extractFromPhpDocNode(
 		Scope $scope,
 		PhpDocNode $docNode,
-		null|string $currentClass,
+		?string $currentClass,
 		TypeResolver $typeResolver,
-		Resolver $genericsResolver,
-	): Resolver {
-		return new Resolver(
+		GenericTypeMap $genericsResolver,
+	): GenericTypeMap {
+		return new GenericTypeMap(
 			$this->extractTemplateTags($scope, $docNode, $typeResolver, $genericsResolver),
 			$this->extractTypeDefTags($scope, $docNode, $currentClass, $typeResolver, $genericsResolver),
 			$this->extractTypeImportTags($scope, $docNode, $typeResolver, $genericsResolver),
 		);
 	}
 
-	private function makeCacheKey(Reflector $reflector): ?string
+	private function makeCacheKey(\Reflector $reflector): ?string
 	{
 		return match (true) {
-			$reflector instanceof ReflectionClass
-			=> $reflector->getName(),
+			$reflector instanceof \ReflectionClass => $reflector->getName(),
 
-			$reflector instanceof ReflectionMethod
-			=> "{$reflector->getDeclaringClass()->getName()}->{$reflector->getName()}()",
+			$reflector instanceof \ReflectionMethod => "{$reflector->getDeclaringClass()->getName()}->{$reflector->getName()}()",
 
-			$reflector instanceof ReflectionFunction
-			=> "{$reflector->getName()}()",
+			$reflector instanceof \ReflectionFunction => "{$reflector->getName()}()",
 
-			default
-			=> null,
+			default => null,
 		};
 	}
 
 	/**
 	 * @return iterable<string, TypeNode>
 	 */
-	private function extractTemplateTags(Scope $scope, PhpDocNode $docNode, TypeResolver $typeResolver, Resolver $genericsResolver): iterable
+	private function extractTemplateTags(Scope $scope, PhpDocNode $docNode, TypeResolver $typeResolver, GenericTypeMap $genericsResolver): iterable
 	{
 		/** @var list<PhpDocTagNode<TemplateTagValueNode>> $tags */
 		$tags = array_merge(
@@ -124,9 +112,10 @@ class Extractor
 
 	/**
 	 * @param null|class-string $currentClass
+	 *
 	 * @return iterable<string, TypeNode>
 	 */
-	private function extractTypeDefTags(Scope $scope, PhpDocNode $docNode, null|string $currentClass, TypeResolver $typeResolver, Resolver $genericsResolver): iterable
+	private function extractTypeDefTags(Scope $scope, PhpDocNode $docNode, ?string $currentClass, TypeResolver $typeResolver, GenericTypeMap $genericsResolver): iterable
 	{
 		/** @var list<PhpDocTagNode<TypeAliasTagValueNode>> $tags */
 		$tags = $docNode->getTagsByName('@phpstan-type');
@@ -135,21 +124,23 @@ class Extractor
 				name: $tag->value->alias,
 				type: $typeResolver->resolve($scope, $tag->value->type, $genericsResolver),
 				declaringClass: $currentClass
-				?? throw new RuntimeException('PHPStan local type requires a class'),
+				?? throw new \RuntimeException('PHPStan local type requires a class'),
 			);
 		}
 	}
 
 	/**
 	 * @return iterable<string, TypeNode>
-	 * @throws ReflectionException
+	 *
+	 * @throws \ReflectionException
 	 */
-	private function extractTypeImportTags(Scope $scope, PhpDocNode $docNode, TypeResolver $typeResolver, Resolver $genericsResolver): iterable
+	private function extractTypeImportTags(Scope $scope, PhpDocNode $docNode, TypeResolver $typeResolver, GenericTypeMap $genericsResolver): iterable
 	{
 		/** @var list<PhpDocTagNode<TypeAliasImportTagValueNode>> $tags */
 		$tags = $docNode->getTagsByName('@phpstan-import-type');
 		foreach ($tags as $tag) {
 			$name = $tag->value->importedAs ?? $tag->value->importedAlias;
+
 			yield $name => new TypeDefTypeNode(
 				name: $name,
 				type: $this->getLocalTypeFromClass(
@@ -166,11 +157,13 @@ class Extractor
 
 	/**
 	 * @param class-string $className
-	 * @throws ReflectionException
+	 *
+	 * @throws \ReflectionException
 	 */
-	private function getLocalTypeFromClass(Scope $scope, string $className, string $typeName, TypeResolver $typeResolver, Resolver $genericsResolver): TypeNode
+	private function getLocalTypeFromClass(Scope $scope, string $className, string $typeName, TypeResolver $typeResolver, GenericTypeMap $genericsResolver): TypeNode
 	{
-		$block = $this->factory->createFromReflector(new ReflectionClass($className));
+		$block = $this->factory->createFromReflector(new \ReflectionClass($className));
+
 		/** @var list<TypeAliasTagValueNode> $tags */
 		$tags = $block->getTags('@phpstan-type');
 		foreach ($tags as $tag) {
@@ -178,7 +171,8 @@ class Extractor
 				return $typeResolver->resolve($scope, $tag->type, $genericsResolver);
 			}
 		}
-		throw new RuntimeException("A `@phpstan-type $typeName` PHPDoc tag was expected on class `$className`, but none was found");
+
+		throw new \RuntimeException("A `@phpstan-type {$typeName}` PHPDoc tag was expected on class `{$className}`, but none was found");
 	}
 
 	/**
@@ -187,15 +181,11 @@ class Extractor
 	private function getNodeClass(TypeNode $node): string
 	{
 		if (!$node instanceof IdentifierTypeNode) {
-			throw new RuntimeException('PHPStan type import tag should point to an IdentifierTypeNode, got `' . get_debug_type($node) . '` instead');
+			throw new \RuntimeException('PHPStan type import tag should point to an IdentifierTypeNode, got `' . get_debug_type($node) . '` instead');
 		}
 
-		if (!class_exists($node->name)
-			&& !interface_exists($node->name)
-			&& !trait_exists($node->name)
-			&& !enum_exists($node->name)
-		) {
-			throw new RuntimeException("PHPStan type can only be imported from a simple class-like structure; symbol `$node->name` could not be found");
+		if (!$this->isClassLike($node->name)) {
+			throw new \RuntimeException("PHPStan type can only be imported from a simple class-like structure; symbol `{$node->name}` could not be found");
 		}
 
 		return $node->name;

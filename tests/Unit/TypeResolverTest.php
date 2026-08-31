@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace uuf6429\PHPStanPHPDocTypeResolverTests\Unit;
 
-use LogicException;
 use PHPStan\PhpDocParser\Ast\ConstExpr\ConstExprIntegerNode;
 use PHPStan\PhpDocParser\Ast\ConstExpr\ConstExprStringNode;
 use PHPStan\PhpDocParser\Ast\ConstExpr\ConstFetchNode;
@@ -13,16 +12,15 @@ use PHPStan\PhpDocParser\Ast\PhpDoc\TemplateTagValueNode;
 use PHPStan\PhpDocParser\Ast\Type;
 use PHPStan\PhpDocParser\Parser\ParserException;
 use PHPUnit\Framework\TestCase;
-use Reflector;
-use RuntimeException;
-use SplFileInfo;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Factory;
-use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Resolver;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Generics\Extractor as GenericsExtractor;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Generics\GenericTypeMap;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Scope;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\ConcreteGenericTypeNode;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\TemplateGenericTypeNode;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\TemplateTypeNode;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\TypeDefTypeNode;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpImports\Resolver as PhpImportsResolver;
 use uuf6429\PHPStanPHPDocTypeResolver\TypeResolver;
 use uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures;
 use uuf6429\PHPStanPHPDocTypeResolverTests\ReflectsValuesTrait;
@@ -38,13 +36,12 @@ final class TypeResolverTest extends TestCase
 	use ReflectsValuesTrait;
 
 	/**
-	 * @dataProvider returnTypeDataProvider
+	 * @dataProvider provideReturnTypeCases
 	 */
-	public function testReturnType(Reflector $reflector, ?Type\TypeNode $expectedReturnType, ?string $minPhpVersion = null): void
+	public function testReturnType(\Reflector $reflector, ?Type\TypeNode $expectedReturnType, ?string $minPhpVersion = null): void
 	{
 		if ($minPhpVersion !== null && version_compare(PHP_VERSION, $minPhpVersion, '>=')) {
-			// @phpstan-ignore staticMethod.dynamicCall
-			$this->markTestSkipped("PHP $minPhpVersion required, but current PHP version is " . PHP_VERSION);
+			self::markTestSkipped("PHP {$minPhpVersion} required, but current PHP version is " . PHP_VERSION);
 		}
 
 		$docBlock = Factory::createInstance()->createFromReflector($reflector);
@@ -52,13 +49,13 @@ final class TypeResolverTest extends TestCase
 		/** @var ReturnTagValueNode $returnTag */
 		$returnTag = $docBlock->getTag('@return');
 
-		$this->assertEquals($expectedReturnType, $returnTag->type);
+		self::assertEquals($expectedReturnType, $returnTag->type);
 	}
 
 	/**
-	 * @return iterable<string, array{reflector: Reflector, expectedReturnType: ?Type\TypeNode, minPhpVersion?: string}>
+	 * @return iterable<string, array{reflector: \Reflector, expectedReturnType: ?Type\TypeNode, minPhpVersion?: string}>
 	 */
-	public static function returnTypeDataProvider(): iterable
+	public static function provideReturnTypeCases(): iterable
 	{
 		$colorsTypeDef = new TypeDefTypeNode(
 			name: 'TColors',
@@ -87,19 +84,19 @@ final class TypeResolverTest extends TestCase
 		);
 
 		yield 'return void' => [
-			'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnVoid']),
+			'reflector' => self::reflectCallable([Fixtures\TypeResolverTestFixture::class, 'returnVoid']),
 			'expectedReturnType' => new Type\IdentifierTypeNode('void'),
 		];
 
 		yield 'return nullable string' => [
-			'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnNullableString']),
+			'reflector' => self::reflectCallable([Fixtures\TypeResolverTestFixture::class, 'returnNullableString']),
 			'expectedReturnType' => new Type\NullableTypeNode(
 				new Type\IdentifierTypeNode('string'),
 			),
 		];
 
 		yield 'return boolean or integer' => [
-			'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnBoolOrInteger']),
+			'reflector' => self::reflectCallable([Fixtures\TypeResolverTestFixture::class, 'returnBoolOrInteger']),
 			'expectedReturnType' => new Type\UnionTypeNode([
 				new Type\IdentifierTypeNode('bool'),
 				new Type\IdentifierTypeNode('integer'),
@@ -107,12 +104,12 @@ final class TypeResolverTest extends TestCase
 		];
 
 		yield 'return namespaced class relative to current namespace' => [
-			'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnImplicitNamespaceClass']),
+			'reflector' => self::reflectCallable([Fixtures\TypeResolverTestFixture::class, 'returnImplicitNamespaceClass']),
 			'expectedReturnType' => new Type\IdentifierTypeNode(Fixtures\Cases\Case1::class),
 		];
 
 		yield 'return grouped namespace import' => [
-			'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnImportedGroupedNamespaceClass']),
+			'reflector' => self::reflectCallable([Fixtures\TypeResolverTestFixture::class, 'returnImportedGroupedNamespaceClass']),
 			'expectedReturnType' => new Type\UnionTypeNode([
 				new Type\IdentifierTypeNode(Fixtures\Cases\Case1::class),
 				new Type\IdentifierTypeNode(Fixtures\Cases\Case2::class),
@@ -120,51 +117,51 @@ final class TypeResolverTest extends TestCase
 		];
 
 		yield 'return self' => [
-			'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnSelf']),
+			'reflector' => self::reflectCallable([Fixtures\TypeResolverTestFixture::class, 'returnSelf']),
 			'expectedReturnType' => new Type\IdentifierTypeNode(Fixtures\TypeResolverTestFixture::class),
 		];
 
 		yield 'return static' => [
-			'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnStatic']),
+			'reflector' => self::reflectCallable([Fixtures\TypeResolverTestFixture::class, 'returnStatic']),
 			'expectedReturnType' => new Type\IdentifierTypeNode(Fixtures\TypeResolverTestFixture::class),
 		];
 
 		yield 'return this' => [
-			'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnThis']),
+			'reflector' => self::reflectCallable([Fixtures\TypeResolverTestFixture::class, 'returnThis']),
 			'expectedReturnType' => new Type\IdentifierTypeNode(Fixtures\TypeResolverTestFixture::class),
 		];
 
 		yield 'return string from function' => [
-			'reflector' => self::reflectFunction(
+			'reflector' => self::reflectCallable(
 				'uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\typeResolverTestFunctionReturningStringFixture',
 			),
 			'expectedReturnType' => new Type\IdentifierTypeNode('string'),
 		];
 
 		yield 'return imported class from function' => [
-			'reflector' => self::reflectFunction(
+			'reflector' => self::reflectCallable(
 				'uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\typeResolverTestFunctionReturningImportedClass',
 			),
-			'expectedReturnType' => new Type\IdentifierTypeNode(SplFileInfo::class),
+			'expectedReturnType' => new Type\IdentifierTypeNode(\SplFileInfo::class),
 		];
 
 		yield 'return string from closure from function' => [
-			'reflector' => self::reflectFunction(getTypeResolverTestClosureReturningString()),
+			'reflector' => self::reflectCallable(getTypeResolverTestClosureReturningString()),
 			'expectedReturnType' => new Type\IdentifierTypeNode('string'),
 		];
 
 		yield 'return imported type from closure from function' => [
-			'reflector' => self::reflectFunction(getTypeResolverTestClosureReturningImportedType()),
+			'reflector' => self::reflectCallable(getTypeResolverTestClosureReturningImportedType()),
 			'expectedReturnType' => new Type\IdentifierTypeNode('SplFileInfo'),
 		];
 
 		yield 'return string from closure from method' => [
-			'reflector' => self::reflectFunction(Fixtures\TypeResolverTestFixture::getTypeResolverTestClosureReturningString()),
+			'reflector' => self::reflectCallable(Fixtures\TypeResolverTestFixture::getTypeResolverTestClosureReturningString()),
 			'expectedReturnType' => new Type\IdentifierTypeNode('string'),
 		];
 
 		yield 'return cases grouped by string key' => [
-			'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnArrayOfGroupedCases']),
+			'reflector' => self::reflectCallable([Fixtures\TypeResolverTestFixture::class, 'returnArrayOfGroupedCases']),
 			'expectedReturnType' => new Type\ArrayShapeNode([
 				new Type\ArrayShapeItemNode(
 					keyName: new ConstExprIntegerNode('1'),
@@ -193,7 +190,7 @@ final class TypeResolverTest extends TestCase
 		];
 
 		yield 'return cases wrapped in object' => [
-			'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnCasesJumpingWrappedInObject']),
+			'reflector' => self::reflectCallable([Fixtures\TypeResolverTestFixture::class, 'returnCasesJumpingWrappedInObject']),
 			'expectedReturnType' => new Type\ObjectShapeNode([
 				new Type\ObjectShapeItemNode(
 					keyName: new ConstExprStringNode('jumpingCases'),
@@ -212,18 +209,22 @@ final class TypeResolverTest extends TestCase
 		];
 
 		yield 'return callable or string conditionally' => [
-			'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnCallableOrTextConditionally']),
+			'reflector' => self::reflectCallable([Fixtures\TypeResolverTestFixture::class, 'returnCallableOrTextConditionally']),
 			'expectedReturnType' => new Type\ConditionalTypeForParameterNode(
 				parameterName: '$cond',
 				targetType: new Type\IdentifierTypeNode('true'),
-				if: new Type\IdentifierTypeNode('callable'),
+				if: new Type\CallableTypeNode(
+					identifier: new Type\IdentifierTypeNode('callable'),
+					parameters: [],
+					returnType: new Type\IdentifierTypeNode('void'),
+				),
 				else: new Type\ConstTypeNode(new ConstExprStringNode('text')),
 				negated: false,
 			),
 		];
 
 		yield 'return random int from range' => [
-			'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnRandomInt']),
+			'reflector' => self::reflectCallable([Fixtures\TypeResolverTestFixture::class, 'returnRandomInt']),
 			'expectedReturnType' => new ConcreteGenericTypeNode(
 				type: new Type\IdentifierTypeNode('int'),
 				templateTypes: [
@@ -242,7 +243,7 @@ final class TypeResolverTest extends TestCase
 		];
 
 		yield 'generic class creator' => [
-			'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'createClass']),
+			'reflector' => self::reflectCallable([Fixtures\TypeResolverTestFixture::class, 'createClass']),
 			'expectedReturnType' => new ConcreteGenericTypeNode(
 				type: new Type\IdentifierTypeNode('new'),
 				templateTypes: [
@@ -261,7 +262,7 @@ final class TypeResolverTest extends TestCase
 		];
 
 		yield 'return offset of virtual type' => [
-			'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'translateColor']),
+			'reflector' => self::reflectCallable([Fixtures\TypeResolverTestFixture::class, 'translateColor']),
 			'expectedReturnType' => new Type\UnionTypeNode([
 				new Type\IdentifierTypeNode('null'),
 				new Type\OffsetAccessTypeNode(
@@ -286,7 +287,7 @@ final class TypeResolverTest extends TestCase
 		];
 
 		yield 'return callable with typed args' => [
-			'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnCallableWithTypedArgs']),
+			'reflector' => self::reflectCallable([Fixtures\TypeResolverTestFixture::class, 'returnCallableWithTypedArgs']),
 			'expectedReturnType' => new Type\CallableTypeNode(
 				identifier: new Type\IdentifierTypeNode('callable'),
 				parameters: [
@@ -311,7 +312,7 @@ final class TypeResolverTest extends TestCase
 		];
 
 		yield 'return callable with templates' => [
-			'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnCallableWithTemplates']),
+			'reflector' => self::reflectCallable([Fixtures\TypeResolverTestFixture::class, 'returnCallableWithTemplates']),
 			'expectedReturnType' => new Type\CallableTypeNode(
 				identifier: new Type\IdentifierTypeNode('callable'),
 				parameters: [],
@@ -328,7 +329,7 @@ final class TypeResolverTest extends TestCase
 		];
 
 		yield 'return a class constant' => [
-			'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnOneClassConstant']),
+			'reflector' => self::reflectCallable([Fixtures\TypeResolverTestFixture::class, 'returnOneClassConstant']),
 			'expectedReturnType' => new Type\UnionTypeNode([
 				new Type\ConstTypeNode(
 					constExpr: new ConstFetchNode(
@@ -346,7 +347,7 @@ final class TypeResolverTest extends TestCase
 		];
 
 		yield 'return all class constants' => [
-			'reflector' => self::reflectMethod([Fixtures\TypeResolverTestFixture::class, 'returnAllClassConstants']),
+			'reflector' => self::reflectCallable([Fixtures\TypeResolverTestFixture::class, 'returnAllClassConstants']),
 			'expectedReturnType' => new ConcreteGenericTypeNode(
 				type: new Type\IdentifierTypeNode('list'),
 				templateTypes: [
@@ -367,12 +368,12 @@ final class TypeResolverTest extends TestCase
 		];
 
 		yield 'return parent class' => [
-			'reflector' => self::reflectMethod([Fixtures\TypeResolverChildTestFixture::class, 'returnParent']),
+			'reflector' => self::reflectCallable([Fixtures\TypeResolverChildTestFixture::class, 'returnParent']),
 			'expectedReturnType' => new Type\IdentifierTypeNode(Fixtures\TypeResolverTestFixture::class),
 		];
 
 		yield 'return Payload<Number>' => [
-			'reflector' => self::reflectMethod([Fixtures\Payload::class, 'makeNumberPayload']),
+			'reflector' => self::reflectCallable([Fixtures\Payload::class, 'makeNumberPayload']),
 			'expectedReturnType' => new ConcreteGenericTypeNode(
 				type: new Type\IdentifierTypeNode(Fixtures\Payload::class),
 				templateTypes: [
@@ -392,7 +393,7 @@ final class TypeResolverTest extends TestCase
 		];
 
 		yield 'return Payload<Payload<T>>' => [
-			'reflector' => self::reflectMethod([Fixtures\Payload::class, 'makePayloadPayload']),
+			'reflector' => self::reflectCallable([Fixtures\Payload::class, 'makePayloadPayload']),
 			'expectedReturnType' => new TemplateGenericTypeNode(
 				type: new Type\IdentifierTypeNode(Fixtures\Payload::class),
 				templateTypes: [
@@ -428,7 +429,7 @@ final class TypeResolverTest extends TestCase
 		];
 
 		yield 'return Pair<int, string>' => [
-			'reflector' => self::reflectMethod([Fixtures\Pair::class, 'makeArrayString']),
+			'reflector' => self::reflectCallable([Fixtures\Pair::class, 'makeArrayString']),
 			'expectedReturnType' => new ConcreteGenericTypeNode(
 				type: new Type\IdentifierTypeNode(Fixtures\Pair::class),
 				templateTypes: [
@@ -453,7 +454,7 @@ final class TypeResolverTest extends TestCase
 		];
 
 		yield 'return Pair<int, T of mixed>' => [
-			'reflector' => self::reflectMethod([Fixtures\Pair::class, 'makeArrayValue']),
+			'reflector' => self::reflectCallable([Fixtures\Pair::class, 'makeArrayValue']),
 			'expectedReturnType' => new ConcreteGenericTypeNode(
 				type: new Type\IdentifierTypeNode(Fixtures\Pair::class),
 				templateTypes: [
@@ -481,7 +482,7 @@ final class TypeResolverTest extends TestCase
 		];
 
 		yield 'return Pair<T, T>' => [
-			'reflector' => self::reflectMethod([Fixtures\Pair::class, 'makeTwins']),
+			'reflector' => self::reflectCallable([Fixtures\Pair::class, 'makeTwins']),
 			'expectedReturnType' => new ConcreteGenericTypeNode(
 				type: new Type\IdentifierTypeNode(Fixtures\Pair::class),
 				templateTypes: [
@@ -512,7 +513,7 @@ final class TypeResolverTest extends TestCase
 		];
 
 		yield 'return T' => [
-			'reflector' => self::reflectMethod([Fixtures\TypeResolverChildTestFixture::class, 'getSimilarItems']),
+			'reflector' => self::reflectCallable([Fixtures\TypeResolverChildTestFixture::class, 'getSimilarItems']),
 			'expectedReturnType' => new TemplateGenericTypeNode(
 				type: new Type\IdentifierTypeNode('list'),
 				templateTypes: [
@@ -540,9 +541,10 @@ final class TypeResolverTest extends TestCase
 				 * @return $this
 				 */
 				PHP,
-			);
+			)
+		;
 
-		$this->expectException(LogicException::class);
+		$this->expectException(\LogicException::class);
 		$this->expectExceptionMessage('Cannot resolve `$this`, no class was defined in the current scope');
 
 		$docBlock->getTag('@return');
@@ -550,23 +552,23 @@ final class TypeResolverTest extends TestCase
 
 	public function testThatInvalidTypeIsIgnored(): void
 	{
-		$scope = new Scope(null, null, null, '', new Resolver());
-		$typeResolver = new TypeResolver();
+		$scope = new Scope(null, null, null, '', new GenericTypeMap());
+		$typeResolver = new TypeResolver(new GenericsExtractor(new Factory()), new PhpImportsResolver());
 		$invalidType = new Type\InvalidTypeNode(new ParserException('', 0, 0, 0));
 
 		$processedType = $typeResolver->resolve($scope, $invalidType);
 
-		$this->assertSame($invalidType, $processedType);
+		self::assertSame($invalidType, $processedType);
 	}
 
 	public function testThatUnsupportedTypesTriggerException(): void
 	{
-		$scope = new Scope(null, null, null, '', new Resolver());
-		$typeResolver = new TypeResolver();
+		$scope = new Scope(null, null, null, '', new GenericTypeMap());
+		$typeResolver = new TypeResolver(new GenericsExtractor(new Factory()), new PhpImportsResolver());
 		$unsupportedType = $this->createMock(Type\TypeNode::class);
 
-		$this->expectException(RuntimeException::class);
-		$this->expectExceptionMessage('Cannot resolve related types, type is unsupported: ' . get_class($unsupportedType));
+		$this->expectException(\RuntimeException::class);
+		$this->expectExceptionMessage('Cannot resolve related types, type is unsupported: ' . \get_class($unsupportedType));
 
 		$typeResolver->resolve($scope, $unsupportedType);
 	}
@@ -581,9 +583,10 @@ final class TypeResolverTest extends TestCase
 				 */
 				PHP,
 				class: Fixtures\TypeResolverTestFixture::class,
-			);
+			)
+		;
 
-		$this->expectException(LogicException::class);
+		$this->expectException(\LogicException::class);
 		$this->expectExceptionMessage('Class/type `' . Fixtures\TypeResolverTestFixture::class . '` doesn\'t have a parent');
 
 		$docBlock->getTag('@return');
@@ -599,9 +602,10 @@ final class TypeResolverTest extends TestCase
 				 * @return TExample
 				 */
 				PHP,
-			);
+			)
+		;
 
-		$this->expectException(RuntimeException::class);
+		$this->expectException(\RuntimeException::class);
 		$this->expectExceptionMessage('PHPStan local type requires a class');
 
 		$docBlock->getTag('@return');

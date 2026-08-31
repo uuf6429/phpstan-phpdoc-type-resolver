@@ -2,28 +2,16 @@
 
 declare(strict_types=1);
 
-namespace uuf6429\PHPStanPHPDocTypeResolverTests\Unit;
+namespace uuf6429\PHPStanPHPDocTypeResolverTests\Unit\PhpDoc;
 
-use Attribute;
-use Exception;
-use InvalidArgumentException;
 use PHPStan\PhpDocParser\Ast\ConstExpr\ConstExprStringNode;
 use PHPStan\PhpDocParser\Ast\Type;
 use PHPUnit\Framework\TestCase;
-use ReflectionAttribute;
-use ReflectionClass;
-use ReflectionClassConstant;
-use ReflectionEnum;
-use ReflectionException;
-use ReflectionObject;
-use ReflectionParameter;
-use ReflectionProperty;
-use Reflector;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Factory as PhpDocFactory;
-use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Factory as GenericsResolverFactory;
-use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Resolver;
-use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\ResolverRefState;
-use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\ResolverValueState;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Generics\AggregateFlag;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Generics\Extractor as GenericsExtractor;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Generics\GenericTypeMap;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Generics\SimpleFlag;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\ReflectorScopeResolver;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Scope;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\TypeDefTypeNode;
@@ -44,33 +32,31 @@ final class ReflectorScopeResolverTest extends TestCase
 	use ReflectsValuesTrait;
 
 	/**
-	 * @dataProvider reflectorScopeResolverDataProvider
+	 * @dataProvider provideReflectorScopeResolverCases
 	 */
 	public function testReflectorScopeResolver(
-		?Scope                             $expectedResult,
-		?Exception                         $expectedException,
-		null|Reflector|ReflectionAttribute $reflector,
-		?string                            $minPhpVersion = null,
+		?Scope $expectedResult,
+		?\Exception $expectedException,
+		\ReflectionAttribute|\Reflector|null $reflector,
+		?string $minPhpVersion = null,
 	): void {
-		if ($minPhpVersion !== null && version_compare(PHP_VERSION, $minPhpVersion, '>=')) {
-			// @phpstan-ignore staticMethod.dynamicCall
-			$this->markTestSkipped("PHP $minPhpVersion required, but current PHP version is " . PHP_VERSION);
+		if ($minPhpVersion !== null && version_compare($minPhpVersion, PHP_VERSION, '>=')) {
+			self::markTestSkipped("PHP {$minPhpVersion} required, but current PHP version is " . PHP_VERSION);
 		}
 		if ($reflector === null) {
-			// @phpstan-ignore staticMethod.dynamicCall
-			$this->markTestSkipped('Reflector could not be constructed');
+			self::markTestSkipped('Reflector could not be constructed');
 		}
 
-		$resolver = new ReflectorScopeResolver(new GenericsResolverFactory(new PhpDocFactory()));
+		$resolver = new ReflectorScopeResolver(new GenericsExtractor(new PhpDocFactory()));
 
 		if ($expectedException !== null) {
-			$this->expectException(get_class($expectedException));
+			$this->expectException(\get_class($expectedException));
 			$this->expectExceptionMessage($expectedException->getMessage());
 		}
 
 		$actualResult = $resolver->resolve($reflector);
 
-		$this->assertEquals(
+		self::assertSame(
 			$expectedResult === null ? null : [
 				'file' => $expectedResult->file,
 				'line' => $expectedResult->line,
@@ -87,11 +73,14 @@ final class ReflectorScopeResolverTest extends TestCase
 	}
 
 	/**
-	 * @return iterable<string, array{expectedResult: ?Scope, expectedException: ?Exception, reflector: ?Reflector, minPhpVersion?: string}>
-	 * @throws ReflectionException
+	 * @return iterable<string, array{expectedResult: ?Scope, expectedException: ?\Exception, reflector: ?\Reflector, minPhpVersion?: string}>
+	 *
+	 * @throws \ReflectionException
 	 */
-	public static function reflectorScopeResolverDataProvider(): iterable
+	public static function provideReflectorScopeResolverCases(): iterable
 	{
+		$fixturesDir = \dirname(__DIR__, 2) . \DIRECTORY_SEPARATOR . 'Fixtures' . \DIRECTORY_SEPARATOR;
+
 		$importedTypesMap = [
 			'TColors' => new TypeDefTypeNode(
 				name: 'TColors',
@@ -147,116 +136,118 @@ final class ReflectorScopeResolverTest extends TestCase
 
 		yield 'ReflectionProperty' => [
 			'expectedResult' => new Scope(
-				file: dirname(__DIR__) . DIRECTORY_SEPARATOR . 'Fixtures' . DIRECTORY_SEPARATOR . 'ObjectTestFixture.php',
-				line: 12,
+				file: "{$fixturesDir}ObjectTestFixture.php",
+				line: 13,
 				class: ObjectTestFixture::class,
 				comment: <<<'PHP'
 					/**
-						 * @var 'hello'|'bye'
+						 * @var 'bye'|'hello'
 						 */
 					PHP,
-				genericsResolver: new Resolver(
+				genericsResolver: new GenericTypeMap(
 					importedTypesMap: $importedTypesMap,
-					state: new ResolverRefState([
-						new ResolverValueState(true),
-						new ResolverValueState(true),
+					concreteness: new AggregateFlag([
+						new SimpleFlag(true),
+						new SimpleFlag(true),
 					]),
 				),
 			),
 			'expectedException' => null,
-			'reflector' => new ReflectionProperty(ObjectTestFixture::class, 'realProperty'),
+			'reflector' => new \ReflectionProperty(ObjectTestFixture::class, 'realProperty'),
 		];
 
 		yield 'ReflectionParameter' => [
 			'expectedResult' => null,
-			'expectedException' => new InvalidArgumentException(
+			'expectedException' => new \InvalidArgumentException(
 				'Cannot determine scope information for reflector of type ReflectionParameter',
 			),
-			'reflector' => new ReflectionParameter(getFunctionWithParameter(), 'greeting'),
+			'reflector' => new \ReflectionParameter(getFunctionWithParameter(), 'greeting'),
 		];
 
 		yield 'ReflectionClass' => [
 			'expectedResult' => new Scope(
-				file: dirname(__DIR__) . DIRECTORY_SEPARATOR . 'Fixtures' . DIRECTORY_SEPARATOR . 'ObjectTestFixture.php',
-				line: 12,
+				file: "{$fixturesDir}ObjectTestFixture.php",
+				line: 13,
 				class: ObjectTestFixture::class,
 				comment: <<<'PHP'
 					/**
 					 * @property string $dynamicProperty
+					 *
 					 * @phpstan-import-type TColors from TypeResolverTestFixture
 					 * @phpstan-import-type TColors from TypeResolverTestFixture as TOtherColors
 					 */
 					PHP,
-				genericsResolver: new Resolver(),
+				genericsResolver: new GenericTypeMap(),
 			),
 			'expectedException' => null,
-			'reflector' => new ReflectionClass(ObjectTestFixture::class),
+			'reflector' => new \ReflectionClass(ObjectTestFixture::class),
 		];
 
 		yield 'ReflectionObject' => [
 			'expectedResult' => new Scope(
-				file: dirname(__DIR__) . DIRECTORY_SEPARATOR . 'Fixtures' . DIRECTORY_SEPARATOR . 'ObjectTestFixture.php',
-				line: 12,
+				file: "{$fixturesDir}ObjectTestFixture.php",
+				line: 13,
 				class: ObjectTestFixture::class,
 				comment: <<<'PHP'
 					/**
 					 * @property string $dynamicProperty
+					 *
 					 * @phpstan-import-type TColors from TypeResolverTestFixture
 					 * @phpstan-import-type TColors from TypeResolverTestFixture as TOtherColors
 					 */
 					PHP,
-				genericsResolver: new Resolver(),
+				genericsResolver: new GenericTypeMap(),
 			),
 			'expectedException' => null,
-			'reflector' => new ReflectionObject(new ObjectTestFixture('hello')),
+			'reflector' => new \ReflectionObject(new ObjectTestFixture('hello')),
 		];
 
 		yield 'ReflectionEnum' => [
 			'expectedResult' => new Scope(
-				file: dirname(__DIR__) . DIRECTORY_SEPARATOR . 'Fixtures' . DIRECTORY_SEPARATOR . 'IntegerEnum.php',
-				line: 5,
+				file: "{$fixturesDir}PHP81" . \DIRECTORY_SEPARATOR . 'IntegerEnum.php',
+				line: 7,
 				class: IntegerEnum::class,
 				comment: '',
-				genericsResolver: new Resolver(),
+				genericsResolver: new GenericTypeMap(),
 			),
 			'expectedException' => null,
-			'reflector' => class_exists(ReflectionEnum::class) ? new ReflectionEnum(IntegerEnum::class) : null,
+			'reflector' => class_exists(\ReflectionEnum::class) ? new \ReflectionEnum(IntegerEnum::class) : null,
 			'minPhpVersion' => '8.1',
 		];
 
 		yield 'ReflectionEnumUnitCase' => [
 			'expectedResult' => new Scope(
-				file: dirname(__DIR__) . DIRECTORY_SEPARATOR . 'Fixtures' . DIRECTORY_SEPARATOR . 'PlainEnum.php',
-				line: 5,
+				file: "{$fixturesDir}PHP81" . \DIRECTORY_SEPARATOR . 'PlainEnum.php',
+				line: 7,
 				class: PlainEnum::class,
 				comment: '',
-				genericsResolver: new Resolver(
-					state: new ResolverRefState([
-						new ResolverValueState(true),
-						new ResolverValueState(true),
+				genericsResolver: new GenericTypeMap(
+					concreteness: new AggregateFlag([
+						new SimpleFlag(true),
+						new SimpleFlag(true),
 					]),
 				),
 			),
 			'expectedException' => null,
-			'reflector' => class_exists(ReflectionEnum::class) ? (new ReflectionEnum(PlainEnum::class))->getCase('Case1') : null,
+			'reflector' => class_exists(\ReflectionEnum::class) ? (new \ReflectionEnum(PlainEnum::class))->getCase('Case1') : null,
 			'minPhpVersion' => '8.1',
 		];
 
 		yield 'ReflectionEnumBackedCase' => [
 			'expectedResult' => new Scope(
-				file: dirname(__DIR__) . DIRECTORY_SEPARATOR . 'Fixtures' . DIRECTORY_SEPARATOR . 'StringEnum.php',
-				line: 5,
+				file: "{$fixturesDir}PHP81" . \DIRECTORY_SEPARATOR . 'StringEnum.php',
+				line: 7,
 				class: StringEnum::class,
 				comment: '',
-				genericsResolver: new Resolver(
-					state: new ResolverRefState([
-						new ResolverValueState(true),
-						new ResolverValueState(true),
+				genericsResolver: new GenericTypeMap(
+					concreteness: new AggregateFlag([
+						new SimpleFlag(true),
+						new SimpleFlag(true),
 					]),
 				),
 			),
 			'expectedException' => null,
-			'reflector' => class_exists(ReflectionEnum::class) ? (new ReflectionEnum(StringEnum::class))->getCase('Case1') : null,
+			'reflector' => class_exists(\ReflectionEnum::class) ? (new \ReflectionEnum(StringEnum::class))->getCase('Case1') : null,
 			'minPhpVersion' => '8.1',
 		];
 
@@ -264,83 +255,84 @@ final class ReflectorScopeResolverTest extends TestCase
 		yield 'ReflectionExtension' => [
 			'expectedResult' => null,
 			'expectedException' => null,
-			'reflector' => self::reflectMethod(),
+			'reflector' => self::reflectCallable(),
 		];
 
 		yield 'ReflectionZendExtension' => [
 			'expectedResult' => null,
 			'expectedException' => null,
-			'reflector' => self::reflectMethod(),
+			'reflector' => self::reflectCallable(),
 		];
 		*/
 		yield 'ReflectionClassConstant' => [
 			'expectedResult' => new Scope(
-				file: dirname(__DIR__) . DIRECTORY_SEPARATOR . 'Fixtures' . DIRECTORY_SEPARATOR . 'ObjectTestFixture.php',
-				line: 12,
+				file: "{$fixturesDir}ObjectTestFixture.php",
+				line: 13,
 				class: ObjectTestFixture::class,
 				comment: '',
-				genericsResolver: new Resolver(
+				genericsResolver: new GenericTypeMap(
 					importedTypesMap: $importedTypesMap,
-					state: new ResolverRefState([
-						new ResolverValueState(true),
-						new ResolverValueState(true),
+					concreteness: new AggregateFlag([
+						new SimpleFlag(true),
+						new SimpleFlag(true),
 					]),
 				),
 			),
 			'expectedException' => null,
-			'reflector' => new ReflectionClassConstant(ObjectTestFixture::class, 'TEST'),
+			'reflector' => new \ReflectionClassConstant(ObjectTestFixture::class, 'TEST'),
 		];
 
 		yield 'ReflectionMethod' => [
 			'expectedResult' => new Scope(
-				file: dirname(__DIR__) . DIRECTORY_SEPARATOR . 'Fixtures' . DIRECTORY_SEPARATOR . 'ObjectTestFixture.php',
-				line: 37,
+				file: "{$fixturesDir}ObjectTestFixture.php",
+				line: 38,
 				class: ObjectTestFixture::class,
 				comment: <<<'PHP'
 					/**
-						 * Greeter
+						 * Greeter.
 						 *
 						 * A function that greets the entity given their name with the desired greeting.
 						 * For example, one could greet the world with `(new ObjectTestFixture('Hello'))->greet('World')`.
 						 *
-						 * @param string|Stringable $name
+						 * @param string|\Stringable $name
 						 */
 					PHP,
-				genericsResolver: new Resolver(
+				genericsResolver: new GenericTypeMap(
 					importedTypesMap: $importedTypesMap,
-					state: new ResolverRefState([
-						new ResolverValueState(true),
-						new ResolverValueState(true),
+					concreteness: new AggregateFlag([
+						new SimpleFlag(true),
+						new SimpleFlag(true),
 					]),
 				),
 			),
 			'expectedException' => null,
-			'reflector' => self::reflectMethod([ObjectTestFixture::class, 'greet']),
+			'reflector' => self::reflectCallable([ObjectTestFixture::class, 'greet']),
 		];
 
 		yield 'ReflectionFunction' => [
 			'expectedResult' => new Scope(
-				file: dirname(__DIR__) . DIRECTORY_SEPARATOR . 'Fixtures' . DIRECTORY_SEPARATOR . 'functions.php',
-				line: 47,
+				file: "{$fixturesDir}functions.php",
+				line: 54,
 				class: null,
 				comment: <<<'PHP'
 					/**
-					 * @param 'hello'|'bye' $greeting
+					 * @param 'bye'|'hello' $greeting
 					 */
 					PHP,
-				genericsResolver: new Resolver(),
+				genericsResolver: new GenericTypeMap(),
 			),
 			'expectedException' => null,
-			'reflector' => self::reflectFunction(getFunctionWithParameter()),
+			'reflector' => self::reflectCallable(getFunctionWithParameter()),
 		];
 
 		yield 'ReflectionAttribute' => [
 			'expectedResult' => null,
-			'expectedException' => new InvalidArgumentException(
+			'expectedException' => new \InvalidArgumentException(
 				'Cannot determine scope information for reflector of type ReflectionAttribute',
 			),
-			'reflector' => (new ReflectionClass(AttributeTestFixture::class))
-				->getAttributes(Attribute::class)[0],
+			'reflector' => (new \ReflectionClass(AttributeTestFixture::class))
+				->getAttributes(\Attribute::class)[0]
+				?? throw new \RuntimeException('Cannot get attribute from fixture'),
 		];
 	}
 }

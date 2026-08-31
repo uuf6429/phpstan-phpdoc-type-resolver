@@ -13,16 +13,17 @@ use uuf6429\PHPStanPHPDocTypeResolver\PhpImports\Parser;
 final class ParserTest extends TestCase
 {
 	/**
-	 * @dataProvider parsingDataProvider
+	 * @dataProvider provideParsingCases
+	 *
 	 * @param array{namespace: string, imports: array<string, string>} $expectedResult
 	 */
 	public function testParsing(string $sourceCode, array $expectedResult): void
 	{
-		$parser = new Parser("<?php\n\n$sourceCode");
+		$parser = new Parser("<?php\n\n{$sourceCode}");
 
 		$actualResult = $parser->parse();
 
-		$this->assertSame(
+		self::assertSame(
 			$expectedResult,
 			[
 				'namespace' => $actualResult->getNamespaceAt(0),
@@ -34,7 +35,7 @@ final class ParserTest extends TestCase
 	/**
 	 * @return iterable<array{sourceCode: string, expectedResult: array{namespace: string, imports: array<string, string>}}>
 	 */
-	public static function parsingDataProvider(): iterable
+	public static function provideParsingCases(): iterable
 	{
 		yield 'no imports' => [
 			'sourceCode' => <<<'PHP'

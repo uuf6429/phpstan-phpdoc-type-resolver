@@ -10,7 +10,7 @@ namespace uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures;
 final class Greeter
 {
 	/**
-	 * @param Person|object{name: string} $person
+	 * @param object{name: string}|Person $person
 	 */
 	public function greet($person): void
 	{

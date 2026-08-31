@@ -1,14 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace uuf6429\PHPStanPHPDocTypeResolverTests\Fixtures\PHP81;
 
 final class Number
 {
 	public function __construct(
-		private readonly int|float $value,
-	) {
-		//
-	}
+		private readonly float|int $value,
+	) {}
 
 	public function asInteger(): int
 	{

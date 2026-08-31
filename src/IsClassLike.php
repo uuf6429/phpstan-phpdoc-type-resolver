@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace uuf6429\PHPStanPHPDocTypeResolver;
 
+/**
+ * @internal
+ */
 trait IsClassLike
 {
 	/**

@@ -6,7 +6,6 @@ namespace uuf6429\PHPStanPHPDocTypeResolverTests\Unit\PhpDoc;
 
 use PHPStan\PhpDocParser;
 use PHPUnit\Framework\TestCase;
-use Throwable;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Factory;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\MultipleTagsFoundException;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\TagNotFoundException;
@@ -21,22 +20,22 @@ final class FactoryTest extends TestCase
 	use ReflectsValuesTrait;
 
 	/**
-	 * @throws Throwable
+	 * @throws \Throwable
 	 */
 	public function testThatDocBlockCanBeCreatedFromReflector(): void
 	{
 		$factory = Factory::createInstance();
-		$reflector = self::reflectMethod([ObjectTestFixture::class, 'greet']);
+		$reflector = self::reflectCallable([ObjectTestFixture::class, 'greet']);
 
 		$block = $factory->createFromReflector($reflector);
 		$tags = $block->getTags('@param');
 
-		$this->assertEquals(
+		self::assertEquals(
 			[
 				new PhpDocParser\Ast\PhpDoc\ParamTagValueNode(
 					type: new PhpDocParser\Ast\Type\UnionTypeNode([
 						new PhpDocParser\Ast\Type\IdentifierTypeNode('string'),
-						new PhpDocParser\Ast\Type\IdentifierTypeNode('Stringable'),
+						new PhpDocParser\Ast\Type\IdentifierTypeNode('\Stringable'),
 					]),
 					isVariadic: false,
 					parameterName: '$name',
@@ -59,7 +58,7 @@ final class FactoryTest extends TestCase
 		$block = $factory->createFromComment($comment);
 		$tags = $block->getTags('@return');
 
-		$this->assertEquals(
+		self::assertEquals(
 			[
 				new PhpDocParser\Ast\PhpDoc\ReturnTagValueNode(
 					type: new PhpDocParser\Ast\Type\IdentifierTypeNode('string'),
@@ -73,7 +72,7 @@ final class FactoryTest extends TestCase
 	public function testThatRequiredMissingTagTriggersException(): void
 	{
 		$factory = Factory::createInstance();
-		$reflector = self::reflectMethod([ObjectTestFixture::class, 'greet']);
+		$reflector = self::reflectCallable([ObjectTestFixture::class, 'greet']);
 		$block = $factory->createFromReflector($reflector);
 
 		$this->expectException(TagNotFoundException::class);
@@ -102,12 +101,12 @@ final class FactoryTest extends TestCase
 	public function testThatSummaryAndDescriptionWorks(): void
 	{
 		$factory = Factory::createInstance();
-		$reflector = self::reflectMethod([ObjectTestFixture::class, 'greet']);
+		$reflector = self::reflectCallable([ObjectTestFixture::class, 'greet']);
 
 		$block = $factory->createFromReflector($reflector);
 
-		$this->assertEquals('Greeter', $block->getSummary());
-		$this->assertEquals(
+		self::assertSame('Greeter.', $block->getSummary());
+		self::assertSame(
 			<<<'TEST'
             A function that greets the entity given their name with the desired greeting.
             For example, one could greet the world with `(new ObjectTestFixture('Hello'))->greet('World')`.
@@ -119,12 +118,12 @@ final class FactoryTest extends TestCase
 	public function testThatMissingSummaryAndDescriptionWorks(): void
 	{
 		$factory = Factory::createInstance();
-		$reflector = self::reflectMethod([ObjectTestFixture::class, '__construct']);
+		$reflector = self::reflectCallable([ObjectTestFixture::class, '__construct']);
 
 		$block = $factory->createFromReflector($reflector);
 
-		$this->assertEquals('', $block->getSummary());
-		$this->assertEquals('', $block->getDescription());
+		self::assertSame('', $block->getSummary());
+		self::assertSame('', $block->getDescription());
 	}
 
 	public function testThatTagExistenceCheckWorks(): void
@@ -138,8 +137,8 @@ final class FactoryTest extends TestCase
             PHP;
 		$block = $factory->createFromComment($comment);
 
-		$this->assertTrue($block->hasTag('@deprecated'));
-		$this->assertFalse($block->hasTag('@readonly'));
+		self::assertTrue($block->hasTag('@deprecated'));
+		self::assertFalse($block->hasTag('@readonly'));
 	}
 
 	public function testThatEmptyDocBlockIsHandled(): void
@@ -148,7 +147,7 @@ final class FactoryTest extends TestCase
 
 		$block = $factory->createFromComment('');
 
-		$this->assertSame('', $block->getSummary());
-		$this->assertCount(0, $block->getTags());
+		self::assertSame('', $block->getSummary());
+		self::assertCount(0, $block->getTags());
 	}
 }

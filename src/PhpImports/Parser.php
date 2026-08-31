@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace uuf6429\PHPStanPHPDocTypeResolver\PhpImports;
 
-use LogicException;
-use PhpToken;
-
 /**
  * Parses a PHP source code file into a {@see Block}s of namespaces contained with a single {@see File}.
  */
@@ -14,7 +11,8 @@ final class Parser
 {
 	/**
 	 * @readonly
-	 * @var array<PhpToken>
+	 *
+	 * @var list<\PhpToken>
 	 */
 	private array $tokens;
 
@@ -27,8 +25,8 @@ final class Parser
 
 	public function __construct(string $content)
 	{
-		$this->tokens = PhpToken::tokenize($content);
-		$this->numTokens = count($this->tokens);
+		$this->tokens = array_values(\PhpToken::tokenize($content));
+		$this->numTokens = \count($this->tokens);
 	}
 
 	public function parse(): File
@@ -79,11 +77,12 @@ final class Parser
 		return new File($blocks);
 	}
 
-	private function next(): ?PhpToken
+	private function next(): ?\PhpToken
 	{
-		for ($i = $this->pointer; $i < $this->numTokens; $i++) {
-			$this->pointer++;
+		for ($i = $this->pointer; $i < $this->numTokens; ++$i) {
+			++$this->pointer;
 
+			assert(isset($this->tokens[$i]));
 			if (!$this->tokens[$i]->isIgnorable()) {
 				return $this->tokens[$i];
 			}
@@ -116,7 +115,7 @@ final class Parser
 				case $token->is([T_NAME_QUALIFIED, T_NAME_FULLY_QUALIFIED]):
 					$class = $token->text;
 					$classSplit = explode('\\', $token->text);
-					$alias = $classSplit[count($classSplit) - 1];
+					$alias = $classSplit[\count($classSplit) - 1];
 					break;
 
 				case $token->is(T_NS_SEPARATOR):
@@ -147,7 +146,7 @@ final class Parser
 					if ($alias !== '') {
 						$statements[strtolower($alias)] = $groupRoot . $class;
 					}
-					break(2);
+					break 2;
 			}
 		}
 
@@ -166,7 +165,7 @@ final class Parser
 		}
 
 		// @codeCoverageIgnoreStart
-		throw new LogicException('Namespace not found.');
+		throw new \LogicException('Namespace not found.');
 		// @codeCoverageIgnoreEnd
 	}
 }

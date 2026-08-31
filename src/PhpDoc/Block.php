@@ -9,9 +9,8 @@ use PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocTagNode;
 use PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocTagValueNode;
 use PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocTextNode;
 use PHPStan\PhpDocParser\Ast\Type\TypeNode;
-use ReflectionException;
-use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Extractor as GenericsExtractor;
-use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\GenericsResolver\Resolver as GenericsResolver;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Generics\Extractor as GenericsExtractor;
+use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Generics\GenericTypeMap as GenericsResolver;
 use uuf6429\PHPStanPHPDocTypeResolver\TypeResolver;
 
 /**
@@ -19,7 +18,7 @@ use uuf6429\PHPStanPHPDocTypeResolver\TypeResolver;
  */
 class Block
 {
-	private null|GenericsResolver $genericsResolver = null;
+	private ?GenericsResolver $genericsResolver = null;
 
 	public function __construct(
 		/** @readonly */
@@ -30,9 +29,7 @@ class Block
 		private TypeResolver $typeResolver,
 		/** @readonly */
 		private GenericsExtractor $genericsExtractor,
-	) {
-		//
-	}
+	) {}
 
 	public function getSummary(): string
 	{
@@ -61,6 +58,7 @@ class Block
 
 			if (!$summaryFound) {
 				$summaryFound = trim($child->text) !== '';
+
 				continue;
 			}
 
@@ -85,7 +83,8 @@ class Block
 
 	/**
 	 * Returns a specific tag, throwing an exception if not found or multiple tags are found.
-	 * @throws TagNotFoundException|MultipleTagsFoundException
+	 *
+	 * @throws MultipleTagsFoundException|TagNotFoundException
 	 */
 	public function getTag(string $name): PhpDocTagValueNode
 	{
@@ -101,7 +100,7 @@ class Block
 	public function findTag(string $name): ?PhpDocTagValueNode
 	{
 		$tags = $this->docNode->getTagsByName($name);
-		if (count($tags) > 1) {
+		if (\count($tags) > 1) {
 			throw new MultipleTagsFoundException($name);
 		}
 
@@ -115,35 +114,12 @@ class Block
 				return true;
 			}
 		}
+
 		return false;
 	}
 
 	/**
-	 * @return ($tag is null ? null : PhpDocTagValueNode)
-	 * @throws ReflectionException
-	 */
-	private function resolveTypesInTag(?PhpDocTagValueNode $tag): ?PhpDocTagValueNode
-	{
-		if ($tag === null) {
-			return null;
-		}
-
-		// Clone the tag so that resolution never mutates the parser's shared AST node in place (which would make
-		// repeated calls non-idempotent and could corrupt the doc node if it is reused elsewhere).
-		$tag = clone $tag;
-
-		foreach (get_object_vars($tag) as $prop => $value) {
-			if ($value instanceof TypeNode) {
-				// @phpstan-ignore property.dynamicName
-				$tag->$prop = $this->typeResolver->resolve($this->scope, $value, $this->getGenericsResolver());
-			}
-		}
-
-		return $tag;
-	}
-
-	/**
-	 * @throws ReflectionException
+	 * @throws \ReflectionException
 	 */
 	public function getGenericsResolver(): GenericsResolver
 	{
@@ -160,5 +136,30 @@ class Block
 					),
 				)
 			);
+	}
+
+	/**
+	 * @return ($tag is null ? null : PhpDocTagValueNode)
+	 *
+	 * @throws \ReflectionException
+	 */
+	private function resolveTypesInTag(?PhpDocTagValueNode $tag): ?PhpDocTagValueNode
+	{
+		if ($tag === null) {
+			return null;
+		}
+
+		// Clone the tag so that resolution never mutates the parser's shared AST node in place (which would make
+		// repeated calls non-idempotent and could corrupt the doc node if it is reused elsewhere).
+		$tag = clone $tag;
+
+		foreach (get_object_vars($tag) as $prop => $value) {
+			if ($value instanceof TypeNode) {
+				// @phpstan-ignore property.dynamicName
+				$tag->{$prop} = $this->typeResolver->resolve($this->scope, $value, $this->getGenericsResolver());
+			}
+		}
+
+		return $tag;
 	}
 }

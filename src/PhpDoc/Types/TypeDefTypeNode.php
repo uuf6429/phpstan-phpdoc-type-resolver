@@ -15,21 +15,17 @@ class TypeDefTypeNode implements TypeNode
 	use NodeAttributes;
 
 	/**
-	 * @param string $name Used to refer to the definition in the same class or other classes when imported.
-	 * @param TypeNode $type The underlying type behind the definition.
-	 * @param string $declaringClass The class where this type definition has been defined/declared.
+	 * @param string   $name           used to refer to the definition in the same class or other classes when imported
+	 * @param TypeNode $type           the underlying type behind the definition
+	 * @param string   $declaringClass the class where this type definition has been defined/declared
 	 */
 	public function __construct(
 		public string $name,
 		public TypeNode $type,
 		public string $declaringClass,
-	) {
-		//
-	}
+	) {}
 
-	/**
-	 * @codeCoverageIgnore
-	 */
+	#[\Override]
 	public function __toString(): string
 	{
 		return (string)$this->type;

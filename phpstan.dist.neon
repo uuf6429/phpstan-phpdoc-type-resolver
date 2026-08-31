@@ -9,3 +9,17 @@ parameters:
 		- ./tests
 	stubFiles:
 		- ./phpstan.stub
+	reportPossiblyNonexistentGeneralArrayOffset: true
+	reportPossiblyNonexistentConstantArrayOffset: true
+	checkMissingOverrideMethodAttribute: true
+	checkMissingOverridePropertyAttribute: true
+	checkMissingCallableSignature: true
+	exceptions:
+		implicitThrows: false
+		checkedExceptionClasses:
+			- App\Exception\CheckedException
+		check:
+			missingCheckedExceptionInThrows: true
+			throwTypeCovariance: true
+			tooWideImplicitThrowType: true
+		reportUncheckedExceptionDeadCatch: true

@@ -8,7 +8,10 @@ use PHPStan\PhpDocParser\Ast\Type\ArrayShapeNode;
 use PHPUnit\Framework\TestCase;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\TemplateTypeNode;
 
-class TemplateTypeNodeTest extends TestCase
+/**
+ * @internal
+ */
+final class TemplateTypeNodeTest extends TestCase
 {
 	public function testBoundStringification(): void
 	{

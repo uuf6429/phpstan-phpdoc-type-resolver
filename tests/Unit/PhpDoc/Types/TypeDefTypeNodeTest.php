@@ -8,7 +8,10 @@ use PHPStan\PhpDocParser\Ast\Type\ArrayShapeNode;
 use PHPUnit\Framework\TestCase;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\TypeDefTypeNode;
 
-class TypeDefTypeNodeTest extends TestCase
+/**
+ * @internal
+ */
+final class TypeDefTypeNodeTest extends TestCase
 {
 	public function testStringification(): void
 	{

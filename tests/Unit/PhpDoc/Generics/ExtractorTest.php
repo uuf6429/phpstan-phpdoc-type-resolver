@@ -10,7 +10,10 @@ use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Generics\Extractor;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Generics\GenericTypeMap;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Types\TemplateTypeNode;
 
-class ExtractorTest extends TestCase
+/**
+ * @internal
+ */
+final class ExtractorTest extends TestCase
 {
 	public function testExtractFromClassNameWithInvalidClass(): void
 	{

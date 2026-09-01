@@ -76,10 +76,11 @@ $scopeResolver = new \uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\ReflectorScopeRes
 $scope = $scopeResolver->resolve($reflector);
 
 // Parse the PHPDoc block with PHPStan PHPDoc parser
-$lexer = new \PHPStan\PhpDocParser\Lexer\Lexer();
-$constExprParser = new \PHPStan\PhpDocParser\Parser\ConstExprParser();
-$typeParser = new \PHPStan\PhpDocParser\Parser\TypeParser($constExprParser);
-$parser = new \PHPStan\PhpDocParser\Parser\PhpDocParser($typeParser, $constExprParser);
+$parserConfig = new \PHPStan\PhpDocParser\ParserConfig([]);
+$lexer = new \PHPStan\PhpDocParser\Lexer\Lexer($parserConfig);
+$constExprParser = new \PHPStan\PhpDocParser\Parser\ConstExprParser($parserConfig);
+$typeParser = new \PHPStan\PhpDocParser\Parser\TypeParser($parserConfig, $constExprParser);
+$parser = new \PHPStan\PhpDocParser\Parser\PhpDocParser($parserConfig, $typeParser, $constExprParser);
 $docBlock = $parser->parse(
     new \PHPStan\PhpDocParser\Parser\TokenIterator(
         $lexer->tokenize($scope->comment)   // 👈 note that the scope resolver also retrieves the PHPDoc block for us

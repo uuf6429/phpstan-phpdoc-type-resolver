@@ -59,25 +59,30 @@ final class TypeResolverTest extends TestCase
 	{
 		$colorsTypeDef = new TypeDefTypeNode(
 			name: 'TColors',
-			type: new Type\ArrayShapeNode(
+			type: Type\ArrayShapeNode::createSealed(
 				items: [
 					new Type\ArrayShapeItemNode(
 						keyName: new Type\IdentifierTypeNode('red'),
 						optional: false,
-						valueType: new Type\ConstTypeNode(constExpr: new ConstExprStringNode('#F00')),
+						valueType: new Type\ConstTypeNode(
+							constExpr: new ConstExprStringNode('#F00', ConstExprStringNode::DOUBLE_QUOTED),
+						),
 					),
 					new Type\ArrayShapeItemNode(
 						keyName: new Type\IdentifierTypeNode('green'),
 						optional: false,
-						valueType: new Type\ConstTypeNode(constExpr: new ConstExprStringNode('#0F0')),
+						valueType: new Type\ConstTypeNode(
+							constExpr: new ConstExprStringNode('#0F0', ConstExprStringNode::DOUBLE_QUOTED),
+						),
 					),
 					new Type\ArrayShapeItemNode(
 						keyName: new Type\IdentifierTypeNode('blue'),
 						optional: false,
-						valueType: new Type\ConstTypeNode(constExpr: new ConstExprStringNode('#00F')),
+						valueType: new Type\ConstTypeNode(
+							constExpr: new ConstExprStringNode('#00F', ConstExprStringNode::DOUBLE_QUOTED),
+						),
 					),
 				],
-				sealed: true,
 				kind: 'array',
 			),
 			declaringClass: Fixtures\TypeResolverTestFixture::class,
@@ -162,7 +167,7 @@ final class TypeResolverTest extends TestCase
 
 		yield 'return cases grouped by string key' => [
 			'reflector' => self::reflectCallable([Fixtures\TypeResolverTestFixture::class, 'returnArrayOfGroupedCases']),
-			'expectedReturnType' => new Type\ArrayShapeNode([
+			'expectedReturnType' => Type\ArrayShapeNode::createSealed([
 				new Type\ArrayShapeItemNode(
 					keyName: new ConstExprIntegerNode('1'),
 					optional: false,
@@ -193,7 +198,7 @@ final class TypeResolverTest extends TestCase
 			'reflector' => self::reflectCallable([Fixtures\TypeResolverTestFixture::class, 'returnCasesJumpingWrappedInObject']),
 			'expectedReturnType' => new Type\ObjectShapeNode([
 				new Type\ObjectShapeItemNode(
-					keyName: new ConstExprStringNode('jumpingCases'),
+					keyName: new ConstExprStringNode('jumpingCases', ConstExprStringNode::SINGLE_QUOTED),
 					optional: false,
 					valueType: new Type\UnionTypeNode([
 						new Type\IdentifierTypeNode('null'),
@@ -217,8 +222,9 @@ final class TypeResolverTest extends TestCase
 					identifier: new Type\IdentifierTypeNode('callable'),
 					parameters: [],
 					returnType: new Type\IdentifierTypeNode('void'),
+					templateTypes: [],
 				),
-				else: new Type\ConstTypeNode(new ConstExprStringNode('text')),
+				else: new Type\ConstTypeNode(new ConstExprStringNode('text', ConstExprStringNode::DOUBLE_QUOTED)),
 				negated: false,
 			),
 		];
@@ -554,7 +560,7 @@ final class TypeResolverTest extends TestCase
 	{
 		$scope = new Scope(null, null, null, '', new GenericTypeMap());
 		$typeResolver = new TypeResolver(new GenericsExtractor(new Factory()), new PhpImportsResolver());
-		$invalidType = new Type\InvalidTypeNode(new ParserException('', 0, 0, 0));
+		$invalidType = new Type\InvalidTypeNode(new ParserException('', 0, 0, 0, null, null));
 
 		$processedType = $typeResolver->resolve($scope, $invalidType);
 

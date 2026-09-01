@@ -40,6 +40,7 @@ final class FactoryTest extends TestCase
 					isVariadic: false,
 					parameterName: '$name',
 					description: '',
+					isReference: false,
 				),
 			],
 			$tags,

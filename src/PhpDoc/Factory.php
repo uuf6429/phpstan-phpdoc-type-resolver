@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace uuf6429\PHPStanPHPDocTypeResolver\PhpDoc;
 
 use PHPStan\PhpDocParser;
+use PHPStan\PhpDocParser\ParserConfig;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Generics\Extractor as GenericsExtractor;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpDoc\Generics\GenericTypeMap as GenericsResolver;
 use uuf6429\PHPStanPHPDocTypeResolver\PhpImports;
@@ -41,10 +42,11 @@ class Factory
 	) {
 		$this->genericsExtractor = $genericsExtractor ?? new GenericsExtractor($this);
 		$this->scopeResolver = $scopeResolver ?? new ReflectorScopeResolver($this->genericsExtractor);
-		$this->lexer = $phpDocParserLexer ?? new PhpDocParser\Lexer\Lexer();
-		$constExprParser = $phpDocConstExprParser ?? new PhpDocParser\Parser\ConstExprParser();
-		$typeParser = $phpDocTypeParser ?? new PhpDocParser\Parser\TypeParser($constExprParser);
-		$this->parser = $phpDocParser ?? new PhpDocParser\Parser\PhpDocParser($typeParser, $constExprParser);
+		$parserConfig = new ParserConfig([]);
+		$this->lexer = $phpDocParserLexer ?? new PhpDocParser\Lexer\Lexer($parserConfig);
+		$constExprParser = $phpDocConstExprParser ?? new PhpDocParser\Parser\ConstExprParser($parserConfig);
+		$typeParser = $phpDocTypeParser ?? new PhpDocParser\Parser\TypeParser($parserConfig, $constExprParser);
+		$this->parser = $phpDocParser ?? new PhpDocParser\Parser\PhpDocParser($parserConfig, $typeParser, $constExprParser);
 		$this->typeResolver = new TypeResolver($this->genericsExtractor, $phpImportsResolver ?? new PhpImports\Resolver());
 	}
 

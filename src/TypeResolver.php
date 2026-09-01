@@ -194,14 +194,24 @@ class TypeResolver
 				valueType: $this->resolveType($scope, $orig->valueType, $genericResolver, TypeNode::class, false),
 			),
 
-			$orig instanceof Type\ArrayShapeNode => new Type\ArrayShapeNode(
-				items: array_map(
-					fn(Type\ArrayShapeItemNode $item): Type\ArrayShapeItemNode => $this->resolveType($scope, $item, $genericResolver, Type\ArrayShapeItemNode::class, false),
-					$orig->items,
+			$orig instanceof Type\ArrayShapeNode => match ($orig->sealed) {
+				true => Type\ArrayShapeNode::createSealed(
+					items: array_map(
+						fn(Type\ArrayShapeItemNode $item): Type\ArrayShapeItemNode => $this->resolveType($scope, $item, $genericResolver, Type\ArrayShapeItemNode::class, false),
+						$orig->items,
+					),
+					kind: $orig->kind,
 				),
-				sealed: $orig->sealed,
-				kind: $orig->kind,
-			),
+
+				false => Type\ArrayShapeNode::createUnsealed(
+					items: array_map(
+						fn(Type\ArrayShapeItemNode $item): Type\ArrayShapeItemNode => $this->resolveType($scope, $item, $genericResolver, Type\ArrayShapeItemNode::class, false),
+						$orig->items,
+					),
+					unsealedType: $orig->unsealedType,
+					kind: $orig->kind,
+				),
+			},
 
 			$orig instanceof Type\ArrayTypeNode => new Type\ArrayTypeNode(
 				type: $this->resolveType($scope, $orig->type, $genericResolver, TypeNode::class, false),

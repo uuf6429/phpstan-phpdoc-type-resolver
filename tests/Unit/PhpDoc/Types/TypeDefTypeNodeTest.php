@@ -17,7 +17,7 @@ final class TypeDefTypeNodeTest extends TestCase
 	{
 		$node = new TypeDefTypeNode(
 			name: 'TType',
-			type: new ArrayShapeNode([]),
+			type: ArrayShapeNode::createSealed([]),
 			declaringClass: 'SomeClass',
 		);
 

@@ -84,50 +84,60 @@ final class ReflectorScopeResolverTest extends TestCase
 		$importedTypesMap = [
 			'TColors' => new TypeDefTypeNode(
 				name: 'TColors',
-				type: new Type\ArrayShapeNode(
+				type: Type\ArrayShapeNode::createSealed(
 					items: [
 						new Type\ArrayShapeItemNode(
 							keyName: new Type\IdentifierTypeNode('red'),
 							optional: false,
-							valueType: new Type\ConstTypeNode(constExpr: new ConstExprStringNode('#F00')),
+							valueType: new Type\ConstTypeNode(
+								constExpr: new ConstExprStringNode('#F00', ConstExprStringNode::SINGLE_QUOTED),
+							),
 						),
 						new Type\ArrayShapeItemNode(
 							keyName: new Type\IdentifierTypeNode('green'),
 							optional: false,
-							valueType: new Type\ConstTypeNode(constExpr: new ConstExprStringNode('#0F0')),
+							valueType: new Type\ConstTypeNode(
+								constExpr: new ConstExprStringNode('#0F0', ConstExprStringNode::SINGLE_QUOTED),
+							),
 						),
 						new Type\ArrayShapeItemNode(
 							keyName: new Type\IdentifierTypeNode('blue'),
 							optional: false,
-							valueType: new Type\ConstTypeNode(constExpr: new ConstExprStringNode('#00F')),
+							valueType: new Type\ConstTypeNode(
+								constExpr: new ConstExprStringNode('#00F', ConstExprStringNode::SINGLE_QUOTED),
+							),
 						),
 					],
-					sealed: true,
 					kind: 'array',
 				),
 				declaringClass: 'TypeResolverTestFixture',
 			),
 			'TOtherColors' => new TypeDefTypeNode(
 				name: 'TOtherColors',
-				type: new Type\ArrayShapeNode(
+				type: Type\ArrayShapeNode::createSealed(
 					items: [
 						new Type\ArrayShapeItemNode(
 							keyName: new Type\IdentifierTypeNode('red'),
 							optional: false,
-							valueType: new Type\ConstTypeNode(constExpr: new ConstExprStringNode('#F00')),
+							valueType: new Type\ConstTypeNode(
+								constExpr: new ConstExprStringNode('#F00', ConstExprStringNode::SINGLE_QUOTED),
+							),
 						),
 						new Type\ArrayShapeItemNode(
 							keyName: new Type\IdentifierTypeNode('green'),
 							optional: false,
-							valueType: new Type\ConstTypeNode(constExpr: new ConstExprStringNode('#0F0')),
+							valueType: new Type\ConstTypeNode(
+								constExpr: new ConstExprStringNode('#0F0', ConstExprStringNode::SINGLE_QUOTED),
+							),
 						),
 						new Type\ArrayShapeItemNode(
 							keyName: new Type\IdentifierTypeNode('blue'),
 							optional: false,
-							valueType: new Type\ConstTypeNode(constExpr: new ConstExprStringNode('#00F')),
+							valueType: new Type\ConstTypeNode(
+								constExpr: new ConstExprStringNode('#00F', ConstExprStringNode::SINGLE_QUOTED),
+							),
 						),
 					],
-					sealed: true,
 					kind: 'array',
 				),
 				declaringClass: 'TypeResolverTestFixture',

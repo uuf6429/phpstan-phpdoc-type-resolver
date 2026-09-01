@@ -17,7 +17,7 @@ final class TemplateTypeNodeTest extends TestCase
 	{
 		$node = new TemplateTypeNode(
 			name: 'TType',
-			bound: new ArrayShapeNode([]),
+			bound: ArrayShapeNode::createSealed([]),
 		);
 
 		$actualString = (string)$node;

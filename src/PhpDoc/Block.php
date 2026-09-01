@@ -33,39 +33,36 @@ class Block
 
 	public function getSummary(): string
 	{
-		foreach ($this->docNode->children as $child) {
-			if (!$child instanceof PhpDocTextNode) {
-				break;
-			}
-
-			if (trim($child->text) !== '') {
-				return $child->text;
-			}
-		}
-
-		return '';
+		return $this->splitLeadingText()[0];
 	}
 
 	public function getDescription(): string
 	{
-		$summaryFound = false;
-		$descriptionLines = [];
+		return $this->splitLeadingText()[1];
+	}
 
+	/**
+	 * @return array{string, string}
+	 */
+	private function splitLeadingText(): array
+	{
+		$lines = [];
 		foreach ($this->docNode->children as $child) {
 			if (!$child instanceof PhpDocTextNode) {
 				break;
 			}
 
-			if (!$summaryFound) {
-				$summaryFound = trim($child->text) !== '';
-
-				continue;
-			}
-
-			$descriptionLines[] = $child->text;
+			$lines[] = $child->text;
 		}
 
-		return trim(implode("\n", $descriptionLines));
+		$text = trim(implode("\n", $lines));
+		if ($text === '') {
+			return ['', ''];
+		}
+
+		$parts = preg_split('/\R[ \t]*\R/', $text, 2);
+
+		return [trim($parts[0] ?? ''), trim($parts[1] ?? '')];
 	}
 
 	/**

@@ -150,7 +150,7 @@ class Extractor
 					$typeResolver,
 					$genericsResolver,
 				),
-				declaringClass: $tag->value->importedFrom->name,
+				declaringClass: (string)$tag->value->importedFrom,
 			);
 		}
 	}

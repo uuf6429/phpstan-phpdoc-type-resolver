@@ -174,7 +174,7 @@ class TypeResolver
 	 *
 	 * @return ($nullable is true ? ?T : T)
 	 */
-	private function resolveType(Scope $scope, mixed $orig, GenericsResolver $genericResolver, string $asClass, bool $nullable)
+	private function resolveType(Scope $scope, mixed $orig, GenericsResolver $genericResolver, string $asClass, bool $nullable): mixed
 	{
 		$constExpr = $orig instanceof Type\ConstTypeNode ? $orig->constExpr : null;
 		if ($orig instanceof Type\CallableTypeNode) {
@@ -354,7 +354,7 @@ class TypeResolver
 
 	private function resolveGenericType(Scope $scope, Type\GenericTypeNode $orig, GenericsResolver $genericResolver): Type\GenericTypeNode
 	{
-		return isset(self::BASIC_TYPES[$orig->type->name])
+		return isset(self::BASIC_TYPES[(string)$orig->type])
 			? $this->resolveGenericBasicType($scope, $orig, $genericResolver)
 			: $this->resolveGenericClassType($scope, $orig, $genericResolver);
 	}
@@ -364,9 +364,9 @@ class TypeResolver
 	 */
 	private function resolveGenericBasicType(Scope $scope, Type\GenericTypeNode $orig, GenericsResolver $genericResolver): AbstractGenericTypeNode
 	{
-		$isIntRange = isset(self::RANGE_TYPES[$orig->type->name]);
+		$isIntRange = isset(self::RANGE_TYPES[(string)$orig->type]);
 
-		$convertedType = $this->resolveGenericTypeName($scope, $orig, $genericResolver);
+		$convertedType = $this->resolveGenericTypeTypeName($scope, $orig->type, $genericResolver);
 		$convertedGenericTypes = array_map(
 			fn(TypeNode $item): TypeNode => ($isIntRange && $item instanceof Type\IdentifierTypeNode && isset(self::RANGE_UTILITY_TYPES[$item->name]))
 				? $item
@@ -384,9 +384,9 @@ class TypeResolver
 
 	private function resolveGenericClassType(Scope $scope, Type\GenericTypeNode $orig, GenericsResolver $genericResolver): AbstractGenericTypeNode
 	{
-		$isGenericUtilityType = isset(self::GENERIC_UTILITY_TYPES[$orig->type->name]);
+		$isGenericUtilityType = isset(self::GENERIC_UTILITY_TYPES[(string)$orig->type]);
 
-		$convertedType = $this->resolveGenericTypeName($scope, $orig, $genericResolver);
+		$convertedType = $this->resolveGenericTypeTypeName($scope, $orig->type, $genericResolver);
 		$convertedGenericTypes = array_values(array_map(
 			fn(TypeNode $item): TypeNode => $this->resolveType($scope, $item, $genericResolver, TypeNode::class, false),
 			$orig->genericTypes,
@@ -410,11 +410,11 @@ class TypeResolver
 	/**
 	 * Resolves the generic's outer type name, leaving generic utility types (e.g. `new`) untouched.
 	 */
-	private function resolveGenericTypeName(Scope $scope, Type\GenericTypeNode $orig, GenericsResolver $genericResolver): Type\IdentifierTypeNode
+	private function resolveGenericTypeTypeName(Scope $scope, Type\IdentifierTypeNode|Type\NameNode $orig, GenericsResolver $genericResolver): Type\IdentifierTypeNode
 	{
-		return isset(self::GENERIC_UTILITY_TYPES[$orig->type->name])
-			? $orig->type
-			: $this->resolveType($scope, $orig->type, $genericResolver, Type\IdentifierTypeNode::class, false);
+		return isset(self::GENERIC_UTILITY_TYPES[(string)$orig]) && !$orig instanceof Type\NameNode
+			? $orig
+			: $this->resolveType($scope, $orig, $genericResolver, Type\IdentifierTypeNode::class, false);
 	}
 
 	/**
@@ -451,10 +451,11 @@ class TypeResolver
 	 */
 	private function getOriginalTemplateTypes(Type\GenericTypeNode $orig, TypeNode $convertedType): array
 	{
+		$typeName = (string)$orig->type;
 		return match (true) {
-			isset(self::KEY_VALUE_OF_TYPES[$orig->type->name]) => array_values($orig->genericTypes),
+			isset(self::KEY_VALUE_OF_TYPES[$typeName]) => array_values($orig->genericTypes),
 
-			isset(self::RANGE_TYPES[$orig->type->name]) => match (\count($orig->genericTypes)) {
+			isset(self::RANGE_TYPES[$typeName]) => match (\count($orig->genericTypes)) {
 				2 => [
 					new Type\IdentifierTypeNode('$min'),
 					new Type\IdentifierTypeNode('$max'),
@@ -462,7 +463,7 @@ class TypeResolver
 				default => throw new \LogicException("Integer range type must have exactly 2 arguments: {$orig}"),
 			},
 
-			isset(self::KEYED_ARRAY_TYPES[$orig->type->name]) => match (\count($orig->genericTypes)) {
+			isset(self::KEYED_ARRAY_TYPES[$typeName]) => match (\count($orig->genericTypes)) {
 				2 => [
 					new Type\IdentifierTypeNode('$key'),
 					new Type\IdentifierTypeNode('$value'),
@@ -470,17 +471,17 @@ class TypeResolver
 				1 => [
 					new Type\IdentifierTypeNode('$value'),
 				],
-				default => throw new \LogicException(ucfirst($orig->type->name) . " type cannot have more than 2 arguments: {$orig}"),
+				default => throw new \LogicException(ucfirst($typeName) . " type cannot have more than 2 arguments: {$orig}"),
 			},
 
-			isset(self::VALUE_ITERABLE_TYPES[$orig->type->name]) => match (\count($orig->genericTypes)) {
+			isset(self::VALUE_ITERABLE_TYPES[$typeName]) => match (\count($orig->genericTypes)) {
 				1 => [
 					new Type\IdentifierTypeNode('$value'),
 				],
-				default => throw new \LogicException(ucfirst($orig->type->name) . " type cannot have more than 1 argument: {$orig}"),
+				default => throw new \LogicException(ucfirst($typeName) . " type cannot have more than 1 argument: {$orig}"),
 			},
 
-			isset(self::GENERIC_UTILITY_TYPES[$orig->type->name]) => match (\count($orig->genericTypes)) {
+			isset(self::GENERIC_UTILITY_TYPES[$typeName]) => match (\count($orig->genericTypes)) {
 				1 => [
 					new Type\IdentifierTypeNode('$class'),
 				],
